@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CityGuard Admin Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>🚨 CITYGUARD</h1>
+        <p>AI Smart City Command Center</p>
+    </header>
+
+
+    <!-- DASHBOARD STATISTICS -->
+
+    <section class="dashboard">
+
+        <div class="card">
+            <h3>Total Reports</h3>
+            <p class="number" id="totalReports">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Total Emergencies</h3>
+            <p class="number" id="totalEmergencies">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Pending Reports</h3>
+            <p class="number" id="pendingReports">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Resolved Reports</h3>
+            <p class="number" id="resolvedReports">0</p>
+        </div>
+
+    </section>
+
+
+    <!-- MAIN CONTENT -->
+
+    <section class="main-content">
+
+        <div class="reports-section">
+
+            <h2>📋 Recent Reports</h2>
+
+            <div class="report-box">
+
+                <h3>🕳️ Pothole</h3>
+
+                <p>
+                    Large pothole reported near Main Junction.
+                </p>
+
+                <p>
+                    <strong>Severity:</strong> Medium
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+                    <span class="pending">Pending</span>
+                </p>
+
+            </div>
+
+
+            <div class="report-box">
+
+                <h3>🗑️ Garbage Overflow</h3>
+
+                <p>
+                    Garbage overflowing near residential area.
+                </p>
+
+                <p>
+                    <strong>Severity:</strong> Low
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+                    <span class="resolved">Resolved</span>
+                </p>
+
+            </div>
+
+
+            <div class="report-box emergency">
+
+                <h3>🚑 Accident</h3>
+
+                <p>
+                    Accident reported near Main Junction.
+                </p>
+
+                <p>
+                    <strong>Severity:</strong>
+                    <span class="high">HIGH</span>
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+                    <span class="emergency-status">ACTIVE EMERGENCY</span>
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- MAP PLACEHOLDER -->
+
+        <div class="map-section">
+
+            <h2>🗺️ City Map</h2>
+
+            <div class="map">
+
+                <div class="map-message">
+                    <h2>City Reports Map</h2>
+                    <p>📍 Pothole</p>
+                    <p>📍 Garbage</p>
+                    <p>🚨 Accident</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- EMERGENCY PANEL -->
+
+    <section class="emergency-panel">
+
+        <h2>🚨 Emergency Response</h2>
+
+        <div class="emergency-info">
+
+            <p>
+                <strong>Emergency:</strong>
+                Accident
+            </p>
+
+            <p>
+                <strong>Location:</strong>
+                Main Junction
+            </p>
+
+            <p>
+                <strong>Severity:</strong>
+                HIGH
+            </p>
+
+            <p>
+                <strong>Responder:</strong>
+                AMB-01
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                DISPATCHED
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>

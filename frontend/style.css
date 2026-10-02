@@ -1,0 +1,245 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f7fb;
+    color: #1f2937;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+header {
+    background: #111827;
+    color: white;
+    padding: 25px 40px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+header p {
+    margin: 8px 0 0;
+    font-size: 16px;
+    color: #d1d5db;
+}
+
+
+/* =========================
+   DASHBOARD CARDS
+========================= */
+
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    padding: 30px 40px;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.number {
+    margin: 15px 0 0;
+    font-size: 38px;
+    font-weight: 700;
+    color: #111827;
+}
+
+
+/* =========================
+   MAIN CONTENT
+========================= */
+
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    padding: 0 40px 30px;
+}
+
+.reports-section,
+.map-section {
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.reports-section h2,
+.map-section h2 {
+    margin-top: 0;
+    font-size: 23px;
+}
+
+
+/* =========================
+   REPORT CARDS
+========================= */
+
+.report-box {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px;
+    margin-top: 15px;
+}
+
+.report-box h3 {
+    margin-top: 0;
+    font-size: 18px;
+}
+
+.report-box p {
+    margin: 9px 0;
+}
+
+.emergency {
+    border: 2px solid #dc2626;
+    background: #fff7f7;
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.pending {
+    color: #d97706;
+    font-weight: bold;
+}
+
+.resolved {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.high {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+.emergency-status {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+
+/* =========================
+   MAP
+========================= */
+
+.map {
+    height: 400px;
+    border-radius: 12px;
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-message {
+    text-align: center;
+}
+
+.map-message h2 {
+    margin-bottom: 20px;
+}
+
+.map-message p {
+    margin: 15px;
+    font-size: 17px;
+}
+
+
+/* =========================
+   EMERGENCY RESPONSE
+========================= */
+
+.emergency-panel {
+    margin: 0 40px 40px;
+    padding: 25px;
+    background: white;
+    border-radius: 14px;
+    border: 2px solid #dc2626;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.emergency-panel h2 {
+    margin-top: 0;
+    color: #dc2626;
+}
+
+.emergency-info {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+}
+
+.emergency-info p {
+    margin: 0;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1000px) {
+
+    .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    .emergency-info {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .dashboard {
+        grid-template-columns: 1fr;
+        padding: 20px;
+    }
+
+    .main-content {
+        padding: 0 20px 20px;
+    }
+
+    .emergency-panel {
+        margin: 0 20px 20px;
+    }
+
+    .emergency-info {
+        grid-template-columns: 1fr;
+    }
+}

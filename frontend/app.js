@@ -1,0 +1,1 @@
+console.log("CityGuard frontend loaded");
