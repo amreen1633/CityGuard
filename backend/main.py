@@ -1,10 +1,9 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Form, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
 from models import Report
-
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -84,17 +83,21 @@ def get_reports(db: Session = Depends(get_db)):
 # Add a new report
 @app.post("/reports")
 def create_report(
-    report: dict,
+    title: str = Form(...),
+    description: str = Form(...),
+    location: str = Form(...),
+    severity: str = Form("Medium"),
+    image: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
 
     new_report = Report(
-        title=report.get("title", "Unknown"),
-        description=report.get("description", ""),
-        severity=report.get("severity", "Medium"),
-        status=report.get("status", "Pending"),
-        location=report.get("location", "Unknown"),
-        type=report.get("type", "General")
+        title=title,
+        description=description,
+        severity=severity,
+        status="Pending",
+        location=location,
+        type="General"
     )
 
     db.add(new_report)
@@ -103,5 +106,6 @@ def create_report(
 
     return {
         "message": "Report created successfully",
-        "id": new_report.id
+        "id": new_report.id,
+        "image": image.filename if image else None
     }
