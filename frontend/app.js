@@ -19,28 +19,23 @@ imageInput.addEventListener("change", function () {
     const file = imageInput.files[0];
 
     if (!file) {
-
         imagePreviewContainer.style.display = "none";
-
         return;
     }
 
-    const imageURL =
-        URL.createObjectURL(file);
+    const imageURL = URL.createObjectURL(file);
 
     imagePreview.src = imageURL;
 
     imagePreviewContainer.style.display = "block";
-
 });
 
 
-/* Submit report */
+/* Submit report to CityGuard backend */
 
-reportForm.addEventListener("submit", function (event) {
+reportForm.addEventListener("submit", async function (event) {
 
     event.preventDefault();
-
 
     const title =
         document.getElementById("title").value;
@@ -54,27 +49,54 @@ reportForm.addEventListener("submit", function (event) {
     const severity =
         document.getElementById("severity").value;
 
+    const formData = new FormData();
 
-    console.log("CityGuard Report:");
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("location", location);
+    formData.append("severity", severity);
 
-    console.log({
-        title,
-        description,
-        location,
-        severity
-    });
+    if (imageInput.files[0]) {
+        formData.append("image", imageInput.files[0]);
+    }
 
+    try {
 
-    message.textContent =
-        "✅ Report submitted successfully!";
+        const response = await fetch(
+            "http://127.0.0.1:8000/reports",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
 
-    message.style.display =
-        "block";
+        const data = await response.json();
 
+        if (!response.ok) {
+            throw new Error(data.detail || "Failed to submit report");
+        }
 
-    reportForm.reset();
+        console.log("CityGuard Report saved:", data);
 
-    imagePreviewContainer.style.display =
-        "none";
+        message.textContent =
+            "✅ Report submitted successfully!";
+
+        message.style.display = "block";
+
+        reportForm.reset();
+
+        imagePreviewContainer.style.display =
+            "none";
+
+    } catch (error) {
+
+        console.error("Error:", error);
+
+        message.textContent =
+            "❌ Failed to submit report. Please try again.";
+
+        message.style.display =
+            "block";
+    }
 
 });
