@@ -5,175 +5,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>CityGuard Admin Dashboard</title>
+    <title>CityGuard - Citizen Reporter</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <header>
-        <h1>🚨 CITYGUARD</h1>
-        <p>AI Smart City Command Center</p>
+    <header class="topbar">
+
+        <div>
+            <h1>🚦 CITYGUARD</h1>
+            <p>AI Smart City Command Center</p>
+        </div>
+
+        <a href="admin.html" class="admin-link">
+            Admin Dashboard
+        </a>
+
     </header>
 
 
-    <!-- DASHBOARD STATISTICS -->
+    <main class="container">
 
-    <section class="dashboard">
+        <section class="hero">
 
-        <div class="card">
-            <h3>Total Reports</h3>
-            <p class="number" id="totalReports">0</p>
-        </div>
+            <h2>Report a City Problem</h2>
 
-        <div class="card">
-            <h3>Total Emergencies</h3>
-            <p class="number" id="totalEmergencies">0</p>
-        </div>
+            <p>
+                Help make your city safer by reporting potholes,
+                garbage, damaged roads and other civic problems.
+            </p>
 
-        <div class="card">
-            <h3>Pending Reports</h3>
-            <p class="number" id="pendingReports">0</p>
-        </div>
-
-        <div class="card">
-            <h3>Resolved Reports</h3>
-            <p class="number" id="resolvedReports">0</p>
-        </div>
-
-    </section>
+        </section>
 
 
-    <!-- MAIN CONTENT -->
+        <section class="card">
 
-    <section class="main-content">
+            <h2>Submit a Report</h2>
 
-        <div class="reports-section">
+            <form id="reportForm">
 
-            <h2>📋 Recent Reports</h2>
+                <label>Problem Title</label>
 
-            <div class="report-box">
-
-                <h3>🕳️ Pothole</h3>
-
-                <p>
-                    Large pothole reported near Main Junction.
-                </p>
-
-                <p>
-                    <strong>Severity:</strong> Medium
-                </p>
-
-                <p>
-                    <strong>Status:</strong>
-                    <span class="pending">Pending</span>
-                </p>
-
-            </div>
+                <input type="text" id="title" placeholder="Example: Large pothole" required>
 
 
-            <div class="report-box">
+                <label>Description</label>
 
-                <h3>🗑️ Garbage Overflow</h3>
-
-                <p>
-                    Garbage overflowing near residential area.
-                </p>
-
-                <p>
-                    <strong>Severity:</strong> Low
-                </p>
-
-                <p>
-                    <strong>Status:</strong>
-                    <span class="resolved">Resolved</span>
-                </p>
-
-            </div>
+                <textarea id="description" placeholder="Describe the problem..." required></textarea>
 
 
-            <div class="report-box emergency">
+                <label>Location</label>
 
-                <h3>🚑 Accident</h3>
-
-                <p>
-                    Accident reported near Main Junction.
-                </p>
-
-                <p>
-                    <strong>Severity:</strong>
-                    <span class="high">HIGH</span>
-                </p>
-
-                <p>
-                    <strong>Status:</strong>
-                    <span class="emergency-status">ACTIVE EMERGENCY</span>
-                </p>
-
-            </div>
-
-        </div>
+                <input type="text" id="location" placeholder="Example: Madhapur" required>
 
 
-        <!-- MAP PLACEHOLDER -->
+                <label>Severity</label>
 
-        <div class="map-section">
+                <select id="severity">
 
-            <h2>🗺️ City Map</h2>
+                    <option value="Low">
+                        Low
+                    </option>
 
-            <div class="map">
+                    <option value="Medium" selected>
+                        Medium
+                    </option>
 
-                <div class="map-message">
-                    <h2>City Reports Map</h2>
-                    <p>📍 Pothole</p>
-                    <p>📍 Garbage</p>
-                    <p>🚨 Accident</p>
+                    <option value="High">
+                        High
+                    </option>
+
+                </select>
+
+
+                <label>Upload Photo</label>
+
+                <input type="file" id="image" accept="image/*" required>
+
+
+                <div id="imagePreviewContainer" class="image-preview-container">
+
+                    <img id="imagePreview" alt="Selected image preview">
+
                 </div>
 
-            </div>
 
-        </div>
+                <button type="submit" class="submit-button">
+                    🚨 Submit Report
+                </button>
 
-    </section>
+            </form>
 
 
-    <!-- EMERGENCY PANEL -->
+            <div id="message" class="message"></div>
 
-    <section class="emergency-panel">
+        </section>
 
-        <h2>🚨 Emergency Response</h2>
-
-        <div class="emergency-info">
-
-            <p>
-                <strong>Emergency:</strong>
-                Accident
-            </p>
-
-            <p>
-                <strong>Location:</strong>
-                Main Junction
-            </p>
-
-            <p>
-                <strong>Severity:</strong>
-                HIGH
-            </p>
-
-            <p>
-                <strong>Responder:</strong>
-                AMB-01
-            </p>
-
-            <p>
-                <strong>Status:</strong>
-                DISPATCHED
-            </p>
-
-        </div>
-
-    </section>
+    </main>
 
 
     <script src="app.js"></script>
