@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
 from models import Report
-
+from ai.ai_service import classify_civic_issue
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -90,14 +90,16 @@ def create_report(
     image: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
+    # AI classification
+    ai_result = classify_civic_issue(description)
 
     new_report = Report(
         title=title,
         description=description,
-        severity=severity,
+        severity=ai_result["severity"],
         status="Pending",
         location=location,
-        type="General"
+        type=ai_result["category"]
     )
 
     db.add(new_report)
