@@ -2,6 +2,8 @@ import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
+import base64
+import mimetypes
 
 load_dotenv()
 
@@ -262,3 +264,122 @@ def fallback_civic_analysis(description: str):
         "confidence": 0.70,
         "ai_status": "fallback"
     }
+
+
+def classify_civic_image(image_path: str):
+    """
+    Analyze a civic issue image using AI.
+    Returns category, severity, confidence and description.
+    """
+
+    if not os.path.exists(image_path):
+        return {
+            "category": "unknown",
+            "severity": "low",
+            "confidence": 0.0,
+            "description": "Image file not found",
+            "ai_status": "invalid_input"
+        }
+
+    if client is None:
+        return {
+            "category": "unknown",
+            "severity": "medium",
+            "confidence": 0.0,
+            "description": "AI API key not available",
+            "ai_status": "fallback"
+        }
+
+    try:
+        # Read image
+        with open(image_path, "rb") as image_file:
+            image_data = base64.b64encode(
+                image_file.read()
+            ).decode("utf-8")
+
+        # Detect image type
+        mime_type, _ = mimetypes.guess_type(image_path)
+
+        if mime_type is None:
+            mime_type = "image/jpeg"
+
+        image_url = f"data:{mime_type};base64,{image_data}"
+
+        prompt = """
+You are CityGuard's civic issue image analysis AI.
+
+Analyze the uploaded image and identify the main civic problem.
+
+Possible categories:
+
+- pothole
+- garbage
+- streetlight
+- water_leakage
+- road_damage
+- other
+
+Return ONLY valid JSON in exactly this format:
+
+{
+    "category": "pothole",
+    "severity": "low",
+    "confidence": 0.0,
+    "description": "short description of the problem"
+}
+
+Rules:
+
+- category must be one of the categories listed above.
+- severity must be low, medium, or high.
+- confidence must be a number between 0 and 1.
+- Give a short description of what is visible.
+- Do not invent details that cannot be seen.
+- Return no text outside the JSON.
+"""
+
+        response = client.responses.create(
+            model=MODEL,
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "input_image",
+                            "image_url": image_url,
+                            "detail": "auto"
+                        }
+                    ]
+                }
+            ]
+        )
+
+        result = response.output_text.strip()
+
+        data = json.loads(result)
+
+        return {
+            "category": data.get("category", "other"),
+            "severity": data.get("severity", "medium"),
+            "confidence": float(data.get("confidence", 0.5)),
+            "description": data.get(
+                "description",
+                "Civic issue detected"
+            ),
+            "ai_status": "success"
+        }
+
+    except Exception as e:
+        print("Image AI error:", e)
+
+        return {
+            "category": "unknown",
+            "severity": "medium",
+            "confidence": 0.0,
+            "description": "Unable to analyze image",
+            "ai_status": "error"
+        }
