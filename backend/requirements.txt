@@ -1,0 +1,9 @@
+
+fastapi
+uvicorn
+sqlalchemy
+python-multipart
+python-dotenv
+openai
+ultralytics
+opencv-python-headless
