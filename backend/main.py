@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Form, UploadFile, File
+from fastapi import FastAPI, Depends, Form, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -108,4 +108,21 @@ def create_report(
         "message": "Report created successfully",
         "id": new_report.id,
         "image": image.filename if image else None
+    }
+
+@app.put("/reports/{report_id}/status")
+def update_report_status(report_id: int, status: str, db: Session = Depends(get_db)):
+    report = db.query(Report).filter(Report.id == report_id).first()
+
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    report.status = status
+    db.commit()
+    db.refresh(report)
+
+    return {
+        "message": "Report status updated successfully",
+        "id": report.id,
+        "status": report.status
     }
