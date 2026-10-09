@@ -19,3 +19,23 @@ venv/
 # OS files
 .DS_Store
 Thumbs.db
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+venv/
+.venv/
+backend/venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local traffic demo footage
+traffic_videos/
+
+# Generated detection output
+traffic/vehicle_detection/output/
+traffic/vehicle_detection/runs/

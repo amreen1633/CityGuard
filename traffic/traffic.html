@@ -14,68 +14,52 @@
 </head>
 
 
-<body>
-
-    <header>
-
-        <h1>🚦 CITYGUARD</h1>
-
-        <p>Adaptive Traffic Management</p>
-
+<body class="traffic-page">
+    <header class="traffic-header">
+        <a class="traffic-brand" href="../frontend/admin.html" aria-label="CityGuard AI admin dashboard">
+            <span class="traffic-brand-mark" aria-hidden="true">✓</span>
+            <span><strong>CityGuard <b>AI</b></strong><small>City operations</small></span>
+        </a>
+        <nav class="traffic-nav" aria-label="CityGuard navigation">
+            <a href="../frontend/admin.html">Command center</a>
+            <a href="../frontend/index.html">Report an issue</a>
+        </nav>
     </header>
 
+    <main class="traffic-main">
+        <section class="dashboard traffic-dashboard">
+            <div class="traffic-heading">
+                <div>
+                    <p class="traffic-eyebrow">HYDERABAD <span>•</span> TRAFFIC MANAGEMENT</p>
+                    <h1>Traffic control center</h1>
+                    <p>Adjust the simulated intersection and test emergency routing.</p>
+                </div>
+                <span class="simulation-badge"><span aria-hidden="true"></span> SIMULATION ONLY</span>
+            </div>
 
-    <main>
-
-        <section class="dashboard">
-
-            <h2>Traffic Control Center</h2>
-
-            <p>
-                Simulated traffic intersection
-            </p>
-
+            <div class="simulation-notice">
+                This is a local traffic simulation for demonstration. It is not connected to live traffic feeds.
+            </div>
 
             <div class="stats">
-
                 <div class="stat">
-
-                    <h3>Traffic Level</h3>
-
-                    <p id="trafficLevel">
-                        LOW
-                    </p>
-
+                    <h3>Simulated congestion</h3>
+                    <p id="trafficLevel" aria-live="polite">LOW</p>
                 </div>
-
-
                 <div class="stat">
-
-                    <h3>Vehicles</h3>
-
-                    <p id="vehicleCount">
-                        3
-                    </p>
-
+                    <h3>Vehicles in simulation</h3>
+                    <p id="vehicleCount" aria-live="polite">3</p>
                 </div>
-
-
                 <div class="stat">
-
-                    <h3>Signal</h3>
-
-                    <p id="signalStatus">
-                        GREEN
-                    </p>
-
+                    <h3>Active signal</h3>
+                    <p id="signalStatus" aria-live="polite">GREEN</p>
                 </div>
-
             </div>
 
 
             <!-- Traffic intersection -->
 
-            <div class="intersection">
+            <div class="intersection" role="img" aria-label="Animated illustration of a simulated city intersection">
 
                 <div class="road horizontal">
 
@@ -97,7 +81,7 @@
 
                 <!-- Traffic signal -->
 
-                <div class="traffic-light">
+                <div class="traffic-light" aria-label="Simulated traffic signal">
 
                     <div id="redLight" class="light red"></div>
 
@@ -106,30 +90,59 @@
                     <div id="greenLight" class="light green active"></div>
 
                 </div>
-
             </div>
+            <p class="intersection-caption">Intersection visualization • vehicle movement is illustrative only</p>
 
+            <section class="traffic-ai-panel" aria-labelledby="traffic-ai-title">
+                <div class="traffic-ai-heading">
+                    <div>
+                        <p class="traffic-eyebrow">OPERATOR DECISION SUPPORT</p>
+                        <h2 id="traffic-ai-title">AI-assisted timing recommendation</h2>
+                    </div>
+                    <span class="simulation-badge"><span aria-hidden="true"></span> SIMULATION ONLY</span>
+                </div>
+                <p id="trafficAnalysisInputs" class="traffic-analysis-inputs">Waiting for simulated state…</p>
+                <p id="trafficAnalysisStatus" class="traffic-analysis-status" role="status" aria-live="polite">Waiting
+                    for analysis…</p>
+                <div class="traffic-recommendation">
+                    <div>
+                        <span>Proposed green phase</span>
+                        <strong id="trafficRecommendation">—</strong>
+                    </div>
+                    <p id="trafficRecommendationReason">A recommendation will be shown when analysis is available.</p>
+                </div>
+                <button id="applyTimingButton" class="apply-timing-button" type="button" disabled>
+                    Apply to simulation only
+                </button>
+                <p id="appliedTiming" class="applied-timing" role="status" aria-live="polite">
+                    No timing recommendation applied.
+                </p>
+                <p class="directional-limitation">
+                    Limitation: this simulation exposes an aggregate vehicle count only. It has no measured directional
+                    counts, lane queues, or live traffic data.
+                </p>
+            </section>
 
             <!-- Controls -->
 
-            <div class="controls">
+            <div class="controls" aria-label="Traffic simulation controls">
 
-                <button id="increaseBtn">
+                <button id="increaseBtn" type="button">
                     ➕ Increase Traffic
                 </button>
 
-                <button id="decreaseBtn">
+                <button id="decreaseBtn" type="button">
                     ➖ Reduce Traffic
                 </button>
 
-                <button id="emergencyBtn" class="emergency">
+                <button id="emergencyBtn" class="emergency" type="button">
                     🚑 Emergency Mode
                 </button>
 
             </div>
 
 
-            <div id="message" class="message">
+            <div id="message" class="message" role="status" aria-live="polite">
                 Normal traffic operation
             </div>
 

@@ -5,308 +5,846 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>CityGuard Command Center</title>
+    <title>CityGuard AI | Admin Dashboard</title>
 
     <link rel="stylesheet" href="style.css">
-
-    <!-- Leaflet map styles -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
-    <style>
-        .map-section {
-            margin: 24px 0;
-        }
-
-        #cityMap {
-            width: 100%;
-            height: 420px;
-            border-radius: 12px;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .map-note {
-            margin: 10px 0 16px;
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .map-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-top: 14px;
-            font-size: 14px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-        }
-
-        .legend-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .legend-road {
-            background: #dc2626;
-        }
-
-        .legend-accident {
-            background: #ea580c;
-        }
-
-        .legend-water {
-            background: #2563eb;
-        }
-
-        @media (max-width: 600px) {
-            #cityMap {
-                height: 320px;
-            }
-        }
-    </style>
 </head>
 
-<body>
-    <header class="topbar">
-        <div>
-            <h1>🚦 CITYGUARD</h1>
-            <p>AI Smart City Command Center</p>
-        </div>
-
-        <a href="index.html" class="admin-link">
-            Citizen Reporter
+<body class="admin-page">
+    <header class="topbar admin-topbar">
+        <a class="brand" href="admin.html" aria-label="CityGuard AI home">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 40 44" role="presentation">
+                    <path d="M20 2 36 8v12c0 10-6.8 17.4-16 22C10.8 37.4 4 30 4 20V8l16-6Z" />
+                    <path d="m12 21 5 5 11-11" />
+                </svg>
+            </span>
+            <span class="brand-copy">
+                <strong>CityGuard <span>AI</span></strong>
+                <small>Safer cities, together</small>
+            </span>
         </a>
+
+        <label class="location-search">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="reportSearch" type="search" placeholder="Search reports or locations"
+                aria-label="Search reports or locations">
+            <kbd aria-hidden="true">⌘ K</kbd>
+        </label>
+
+        <div class="header-actions">
+            <a class="notification-button" href="#recent-reports" aria-label="Jump to recent reports">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+                </svg>
+            </a>
+            <div class="profile">
+                <span class="profile-avatar" aria-hidden="true">CG</span>
+                <span class="profile-name">City Admin</span>
+            </div>
+        </div>
     </header>
 
-    <main class="container">
-        <section class="hero">
-            <h2>Command Center Dashboard</h2>
-            <p>Monitor citizen reports and city problems.</p>
-        </section>
+    <div class="admin-layout">
+        <aside class="admin-sidebar" aria-label="Main navigation">
+            <p class="sidebar-label">WORKSPACE</p>
+            <nav class="sidebar-nav">
+                <a class="sidebar-link is-active" href="#dashboard">
+                    <span aria-hidden="true">⌂</span> Overview
+                </a>
+                <a class="sidebar-link" href="#incident-map">
+                    <span aria-hidden="true">⌖</span> Live Map
+                </a>
+                <a class="sidebar-link" href="#recent-reports">
+                    <span aria-hidden="true">▤</span> Reports
+                </a>
+                <a class="sidebar-link" href="#recorded-video-demo">
+                    <span aria-hidden="true">▶</span> Video Demo
+                </a>
+                <a class="sidebar-link" href="../traffic/traffic.html">
+                    <span aria-hidden="true">⇄</span> Traffic Management
+                </a>
+                <a class="sidebar-link" href="#analytics">
+                    <span aria-hidden="true">▥</span> Analytics
+                </a>
+            </nav>
 
-        <!-- Dashboard statistics -->
-        <section class="card">
-            <h2>City Overview</h2>
+            <div class="sidebar-bottom">
+                <div class="sidebar-help">
+                    <span class="help-icon" aria-hidden="true">?</span>
+                    <strong>Need a hand?</strong>
+                    <p>Get help using your CityGuard dashboard.</p>
+                    <a href="mailto:support@cityguard.local">Contact support <span aria-hidden="true">→</span></a>
+                </div>
+                <a class="sidebar-citizen-link" href="index.html">Open citizen reporter <span
+                        aria-hidden="true">↗</span></a>
+            </div>
+        </aside>
 
-            <div class="dashboard-stats">
-                <div class="stat-card">
-                    <h3 id="totalReports">0</h3>
+        <main class="container admin-main" id="dashboard">
+            <section class="dashboard-heading">
+                <div>
+                    <p class="eyebrow">CITY OPERATIONS <span>•</span> HYDERABAD</p>
+                    <h1>Good day, City Admin <span aria-hidden="true">👋</span></h1>
+                    <p class="heading-description">Here’s what’s happening across your city today.</p>
+                </div>
+                <a class="primary-button" href="index.html"><span aria-hidden="true">＋</span> Report an issue</a>
+            </section>
+
+            <section class="dashboard-stats" id="analytics" aria-label="City report statistics">
+                <article class="stat-card stat-total">
+                    <div class="stat-card-top">
+                        <span class="stat-icon" aria-hidden="true">▤</span>
+                        <span class="stat-trend">All time</span>
+                    </div>
                     <p>Total Reports</p>
-                </div>
-
-                <div class="stat-card">
-                    <h3 id="emergencyReports">0</h3>
-                    <p>Emergencies</p>
-                </div>
-
-                <div class="stat-card">
-                    <h3 id="pendingReports">0</h3>
+                    <h2 id="totalReports" aria-live="polite">Loading…</h2>
+                </article>
+                <article class="stat-card stat-pending">
+                    <div class="stat-card-top">
+                        <span class="stat-icon" aria-hidden="true">◷</span>
+                        <span class="stat-trend">Needs attention</span>
+                    </div>
                     <p>Pending</p>
-                </div>
-
-                <div class="stat-card">
-                    <h3 id="resolvedReports">0</h3>
+                    <h2 id="pendingReports" aria-live="polite">Loading…</h2>
+                </article>
+                <article class="stat-card stat-resolved">
+                    <div class="stat-card-top">
+                        <span class="stat-icon" aria-hidden="true">✓</span>
+                        <span class="stat-trend">Completed</span>
+                    </div>
                     <p>Resolved</p>
+                    <h2 id="resolvedReports" aria-live="polite">Loading…</h2>
+                </article>
+                <article class="stat-card stat-high">
+                    <div class="stat-card-top">
+                        <span class="stat-icon" aria-hidden="true">!</span>
+                        <span class="stat-trend">Priority</span>
+                    </div>
+                    <p>High Priority</p>
+                    <h2 id="highPriorityReports" aria-live="polite">Loading…</h2>
+                </article>
+            </section>
+            <p id="dashboardMessage" class="report-state dashboard-message" role="status" hidden></p>
+
+            <div class="dashboard-content-grid">
+                <section class="card admin-panel map-panel" id="incident-map">
+                    <div class="panel-heading">
+                        <div>
+                            <h2>Incident map</h2>
+                            <p>Explore reported issues across Hyderabad</p>
+                        </div>
+                        <span class="map-location-pill"><span aria-hidden="true">⌖</span> Hyderabad, India</span>
+                    </div>
+
+                    <p class="map-note">Colored markers below are demo locations for presentation only; live report
+                        locations are shown in the reports list.</p>
+                    <div id="cityMap" aria-label="Interactive Hyderabad incident map"></div>
+                    <p id="mapStatus" class="map-status" role="status" hidden></p>
+
+                    <div class="map-legend" aria-label="Demo marker categories">
+                        <span class="legend-item"><span class="legend-dot legend-road"></span> Road issue
+                            <small>Demo</small></span>
+                        <span class="legend-item"><span class="legend-dot legend-accident"></span> Accident
+                            <small>Demo</small></span>
+                        <span class="legend-item"><span class="legend-dot legend-water"></span> Waterlogging
+                            <small>Demo</small></span>
+                    </div>
+                </section>
+
+                <section class="card admin-panel reports-panel" id="recent-reports">
+                    <div class="panel-heading">
+                        <div>
+                            <h2>Incident review queue</h2>
+                            <p>Possible emergencies and high-priority reports appear first</p>
+                        </div>
+                        <span id="aiServiceStatus" class="ai-status-badge" role="status">AI status: checking</span>
+                    </div>
+                    <div class="report-filters" aria-label="Filter reports">
+                        <label>
+                            <span class="visually-hidden">Filter by status</span>
+                            <select id="statusFilter">
+                                <option value="">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span class="visually-hidden">Filter by priority</span>
+                            <select id="severityFilter">
+                                <option value="">All priorities</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </label>
+                        <button class="refresh-button" id="refreshReports" type="button">Refresh</button>
+                    </div>
+                    <div id="reportsContainer" aria-live="polite" aria-busy="true">
+                        <p class="report-state">Loading reports…</p>
+                    </div>
+                </section>
+            </div>
+
+            <section class="card admin-panel ai-traffic-panel" id="traffic-insights">
+                <div class="panel-heading">
+                    <div>
+                        <h2>AI traffic insights</h2>
+                        <p>Simulation-only recommendation · no live traffic feed</p>
+                    </div>
+                    <span class="simulation-badge"><span aria-hidden="true"></span> DEMO INPUT</span>
                 </div>
-            </div>
-        </section>
+                <p class="traffic-demo-input">Demonstration input: MEDIUM congestion · 6 simulated vehicles. Directional
+                    counts and queue sizes are not available.</p>
+                <p id="trafficInsightStatus" class="ai-assessment-status" role="status">Loading simulation analysis…</p>
+                <div class="traffic-insight-result">
+                    <p><strong>Recommendation</strong> <span id="trafficRecommendation">Waiting for analysis</span></p>
+                    <p><strong>Reason</strong> <span id="trafficRecommendationReason">No recommendation received
+                            yet.</span></p>
+                </div>
+                <a class="text-link" href="../traffic/traffic.html">Review traffic simulation <span
+                        aria-hidden="true">→</span></a>
+            </section>
 
-        <!-- Hyderabad incident map -->
-        <section class="card map-section">
-            <h2>📍 Hyderabad City Map</h2>
+            <section class="card admin-panel vehicle-detection-panel" id="recorded-video-demo"
+                aria-labelledby="vehicleDetectionTitle">
+                <div class="panel-heading">
+                    <div>
+                        <h2 id="vehicleDetectionTitle">Recorded-video vehicle detection</h2>
+                        <p>traffic_videos/video3.mp4 · YOLO and ByteTrack analysis</p>
+                    </div>
+                    <span class="simulation-badge"><span aria-hidden="true"></span> RECORDED VIDEO DEMO — NOT LIVE CCTV</span>
+                </div>
+                <p id="vehicleDetectionStatus" class="vehicle-detection-status" role="status" aria-live="polite">
+                    Checking recorded-video processing status…
+                </p>
+                <div class="vehicle-detection-progress" role="progressbar" aria-label="Video processing progress"
+                    aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <span id="vehicleDetectionProgress"></span>
+                </div>
+                <dl class="vehicle-detection-metrics">
+                    <div><dt>Cars</dt><dd id="vehicleCountCar">—</dd></div>
+                    <div><dt>Motorcycles</dt><dd id="vehicleCountMotorcycle">—</dd></div>
+                    <div><dt>Buses</dt><dd id="vehicleCountBus">—</dd></div>
+                    <div><dt>Trucks</dt><dd id="vehicleCountTruck">—</dd></div>
+                    <div><dt>Unique tracked vehicles</dt><dd id="vehicleUniqueCount">—</dd></div>
+                    <div><dt>Frame detections</dt><dd id="vehicleDetectionCount">—</dd></div>
+                    <div><dt>Untracked detections</dt><dd id="vehicleUntrackedCount">—</dd></div>
+                    <div><dt>Processed frames</dt><dd id="vehicleFrameCount">—</dd></div>
+                    <div><dt>Peak in one frame</dt><dd id="vehiclePeakCount">—</dd></div>
+                    <div><dt>Demo congestion estimate</dt><dd id="vehicleCongestion">—</dd></div>
+                </dl>
+                <p id="vehicleDetectionNote" class="vehicle-detection-note">
+                    Congestion is estimated from the clip’s peak simultaneous detections only. It is not a verified
+                    real-world traffic measurement; no signal control is connected.
+                </p>
+                <div class="vehicle-detection-actions">
+                    <button class="primary-button" id="startVehicleDetection" type="button">Process recorded video</button>
+                    <button class="refresh-button" id="refreshVehicleDetection" type="button">Refresh status</button>
+                    <a class="text-link" id="annotatedVideoLink" href="#" hidden>Open annotated video <span
+                            aria-hidden="true">→</span></a>
+                </div>
+            </section>
 
-            <p class="map-note">
-                Demo locations for the CityGuard presentation.
-                These markers are sample data, not live incidents.
-            </p>
+            <footer class="dashboard-footer">CityGuard AI <span>•</span> Hyderabad city operations</footer>
+        </main>
+    </div>
 
-            <div id="cityMap" aria-label="Interactive Hyderabad incident map"></div>
-
-            <div class="map-legend">
-                <span class="legend-item">
-                    <span class="legend-dot legend-road"></span>
-                    Pothole / Road issue
-                </span>
-
-                <span class="legend-item">
-                    <span class="legend-dot legend-accident"></span>
-                    Road accident
-                </span>
-
-                <span class="legend-item">
-                    <span class="legend-dot legend-water"></span>
-                    Waterlogging
-                </span>
-            </div>
-        </section>
-
-        <!-- Recent reports from backend -->
-        <section class="card">
-            <h2>Recent City Reports</h2>
-
-            <div id="reportsContainer">
-                <p>Loading reports...</p>
-            </div>
-        </section>
-    </main>
-
-    <!-- Leaflet map library -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script>
-        const API_URL = "http://127.0.0.1:8000";
+        const pageHost = window.location.hostname;
+        const API_HOST = !pageHost || pageHost === "localhost" || pageHost === "127.0.0.1"
+            ? "127.0.0.1"
+            : pageHost;
+        const API_URL = `http://${API_HOST}:8000`;
+        const reportSearch = document.getElementById("reportSearch");
+        const dashboardMessage = document.getElementById("dashboardMessage");
+        const reportsContainer = document.getElementById("reportsContainer");
+        const statusFilter = document.getElementById("statusFilter");
+        const severityFilter = document.getElementById("severityFilter");
+        const refreshButton = document.getElementById("refreshReports");
+        const aiServiceStatus = document.getElementById("aiServiceStatus");
+        let reportCards = [];
+        let reports = [];
 
-        // Initialize map centered on Hyderabad.
-        const cityMap = L.map("cityMap").setView(
-            [17.3850, 78.4867],
-            12
-        );
-
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-        }).addTo(cityMap);
-
-        // Sample incident markers for the demo only.
-        const demoIncidents = [
-            {
-                title: "Pothole reported",
-                type: "Road issue",
-                severity: "High",
-                location: "Madhapur",
-                coordinates: [17.4483, 78.3915],
-                color: "#dc2626"
-            },
-            {
-                title: "Road accident",
-                type: "Accident",
-                severity: "High",
-                location: "Hussain Sagar area",
-                coordinates: [17.4239, 78.4738],
-                color: "#ea580c"
-            },
-            {
-                title: "Waterlogging",
-                type: "Waterlogging",
-                severity: "Medium",
-                location: "Charminar area",
-                coordinates: [17.3616, 78.4747],
-                color: "#2563eb"
+        function initializeMap() {
+            const mapStatus = document.getElementById("mapStatus");
+            if (!window.L) {
+                mapStatus.textContent = "The map library did not load. Report statistics and reports can still be used.";
+                mapStatus.hidden = false;
+                return;
             }
-        ];
 
-        demoIncidents.forEach(function (incident) {
-            const marker = L.circleMarker(incident.coordinates, {
-                radius: 9,
-                color: incident.color,
-                fillColor: incident.color,
-                fillOpacity: 0.8,
-                weight: 2
-            }).addTo(cityMap);
-
-            marker.bindPopup(`
-                <strong>${incident.title}</strong><br>
-                Type: ${incident.type}<br>
-                Severity: ${incident.severity}<br>
-                Location: ${incident.location}<br>
-                <em>Demo data only</em>
-            `);
-        });
-
-        async function loadDashboard() {
             try {
-                const response = await fetch(`${API_URL}/dashboard`);
+                const cityMap = L.map("cityMap").setView([17.3850, 78.4867], 12);
 
-                if (!response.ok) {
-                    throw new Error("Dashboard request failed");
-                }
+                L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
+                }).addTo(cityMap);
 
-                const data = await response.json();
+                const demoIncidents = [
+                    {
+                        title: "Pothole reported",
+                        type: "Road issue",
+                        severity: "High",
+                        location: "Madhapur",
+                        coordinates: [17.4483, 78.3915],
+                        color: "#e64b55"
+                    },
+                    {
+                        title: "Road accident",
+                        type: "Accident",
+                        severity: "High",
+                        location: "Hussain Sagar area",
+                        coordinates: [17.4239, 78.4738],
+                        color: "#f29b38"
+                    },
+                    {
+                        title: "Waterlogging",
+                        type: "Waterlogging",
+                        severity: "Medium",
+                        location: "Charminar area",
+                        coordinates: [17.3616, 78.4747],
+                        color: "#3982e8"
+                    }
+                ];
 
-                document.getElementById("totalReports").textContent =
-                    data.total_reports ?? 0;
+                demoIncidents.forEach(function (incident) {
+                    const marker = L.circleMarker(incident.coordinates, {
+                        radius: 9,
+                        color: incident.color,
+                        fillColor: incident.color,
+                        fillOpacity: 0.85,
+                        weight: 2
+                    }).addTo(cityMap);
 
-                document.getElementById("emergencyReports").textContent =
-                    data.total_emergencies ?? 0;
-
-                document.getElementById("pendingReports").textContent =
-                    data.pending_reports ?? 0;
-
-                document.getElementById("resolvedReports").textContent =
-                    data.resolved_reports ?? 0;
+                    marker.bindPopup(
+                        `<strong>${incident.title}</strong><br>` +
+                        `Type: ${incident.type}<br>` +
+                        `Severity: ${incident.severity}<br>` +
+                        `Location: ${incident.location}<br>` +
+                        "<em>Demo data only</em>"
+                    );
+                });
             } catch (error) {
-                console.log("Dashboard API unavailable:", error.message);
+                console.error("Unable to initialize the Hyderabad map:", error);
+                mapStatus.textContent = "The map could not be initialized. Report statistics and reports can still be used.";
+                mapStatus.hidden = false;
             }
         }
 
-        async function loadReports() {
-            const container = document.getElementById("reportsContainer");
+        initializeMap();
+
+        function isHighPriority(report) {
+            return String(report.severity || "").toLowerCase() === "high";
+        }
+
+        function updateReportStatistics(reportList, summary) {
+            document.getElementById("totalReports").textContent =
+                Number.isFinite(summary?.total_reports) ? summary.total_reports : reportList.length;
+            document.getElementById("pendingReports").textContent =
+                Number.isFinite(summary?.pending_reports)
+                    ? summary.pending_reports
+                    : reportList.filter(function (report) {
+                        return String(report.status || "").toLowerCase() === "pending";
+                    }).length;
+            document.getElementById("resolvedReports").textContent =
+                Number.isFinite(summary?.resolved_reports)
+                    ? summary.resolved_reports
+                    : reportList.filter(function (report) {
+                        return String(report.status || "").toLowerCase() === "resolved";
+                    }).length;
+            document.getElementById("highPriorityReports").textContent =
+                reportList.filter(isHighPriority).length;
+        }
+
+        function updateAIServiceStatus(reportList) {
+            const statuses = reportList
+                .map(function (report) {
+                    return report.ai_assessment?.ai_status;
+                })
+                .filter(Boolean);
+
+            if (statuses.length === 0) {
+                aiServiceStatus.textContent = reportList.length
+                    ? "AI status: not reported"
+                    : "AI status: awaiting reports";
+                aiServiceStatus.className = "ai-status-badge";
+                return;
+            }
+
+            const hasAIResult = statuses.includes("success");
+            const hasFallback = statuses.some(function (status) {
+                return status === "fallback" || status === "invalid_input";
+            });
+            const hasUnavailable = statuses.some(function (status) {
+                return status === "unavailable";
+            });
+            aiServiceStatus.textContent = hasAIResult && hasFallback
+                ? "AI status: partial · fallback used"
+                : hasAIResult && hasUnavailable
+                    ? "AI status: partial · some unavailable"
+                    : hasAIResult
+                        ? "AI status: available"
+                        : hasFallback
+                            ? "AI status: unavailable · fallback used"
+                            : "AI status: unavailable";
+            aiServiceStatus.className = `ai-status-badge ${hasAIResult ? "ai-status-available" : "ai-status-fallback"}`;
+        }
+
+        async function fetchJSON(endpoint, options) {
+            const url = `${API_URL}${endpoint}`;
+            let response;
 
             try {
-                const response = await fetch(`${API_URL}/reports`);
+                response = await fetch(url, options);
+            } catch (error) {
+                throw new Error(
+                    `Could not connect to ${url}. Confirm the backend is running and open this page from the same machine.`
+                );
+            }
 
-                if (!response.ok) {
-                    throw new Error("Reports request failed");
+            if (!response.ok) {
+                throw new Error(`${endpoint} returned HTTP ${response.status}.`);
+            }
+
+            return response.json();
+        }
+
+        async function loadDashboard() {
+            const result = await fetchJSON("/dashboard");
+            if (!result || typeof result !== "object" || Array.isArray(result)) {
+                throw new Error("/dashboard returned an unexpected response.");
+            }
+            return result;
+        }
+
+        function createReportCard(report) {
+            const card = document.createElement("article");
+            card.className = "report-card";
+
+            const type = document.createElement("span");
+            type.className = "report-type";
+            type.textContent = report.type || "City issue";
+
+            const title = document.createElement("h3");
+            title.textContent = report.title || "City report";
+
+            const location = document.createElement("p");
+            location.className = "report-location";
+            location.textContent = `⌖ ${report.location || "Location not provided"}`;
+
+            const reportedAt = document.createElement("p");
+            reportedAt.className = "report-time";
+            const timestamp = report.created_at || report.timestamp || report.date;
+            const parsedTimestamp = timestamp ? new Date(timestamp) : null;
+            const timestampIsValid = parsedTimestamp && !Number.isNaN(parsedTimestamp.getTime());
+            reportedAt.textContent = timestampIsValid
+                ? `Reported ${parsedTimestamp.toLocaleString()}`
+                : `Reported time not provided${Number.isInteger(report.id) ? ` · Report #${report.id}` : ""}`;
+
+            const metadata = document.createElement("div");
+            metadata.className = "report-metadata";
+
+            const severity = document.createElement("span");
+            const severityValue = report.severity || "Not specified";
+            const normalizedSeverity = String(severityValue).toLowerCase();
+            severity.className = `severity-badge severity-${normalizedSeverity}`;
+            severity.textContent = `Submitted: ${severityValue}`;
+
+            const status = document.createElement("span");
+            const statusValue = report.status || "Not specified";
+            const normalizedStatus = String(statusValue).toLowerCase().replace(/\s+/g, "-");
+            status.className = `status-badge status-${normalizedStatus}`;
+            status.textContent = statusValue;
+
+            metadata.append(severity, status);
+            card.append(type, title, location, reportedAt, metadata);
+
+            const assessment = report.ai_assessment;
+            const assessmentSection = document.createElement("div");
+            assessmentSection.className = "report-ai-assessment";
+            const assessmentLabel = document.createElement("span");
+            assessmentLabel.className = "assessment-label";
+            assessmentLabel.textContent = assessment?.ai_status === "success"
+                ? "AI assessment"
+                : assessment?.ai_status === "unavailable"
+                    ? "Assessment unavailable"
+                    : "Rule-based fallback";
+            assessmentSection.appendChild(assessmentLabel);
+
+            if (assessment) {
+                const category = document.createElement("p");
+                category.textContent = assessment.category
+                    ? `Category: ${String(assessment.category).replaceAll("_", " ")}`
+                    : "Category: unavailable";
+                assessmentSection.appendChild(category);
+
+                const assessedSeverity = document.createElement("p");
+                assessedSeverity.textContent =
+                    `AI-assessed priority: ${assessment.severity || "not available"} · citizen-submitted priority: ${severityValue}`;
+                assessmentSection.appendChild(assessedSeverity);
+
+                if (assessment.department) {
+                    const department = document.createElement("p");
+                    department.textContent = `Recommended department: ${assessment.department}`;
+                    assessmentSection.appendChild(department);
                 }
 
-                const reports = await response.json();
+                if (assessment.explanation) {
+                    const explanation = document.createElement("p");
+                    explanation.className = "assessment-explanation";
+                    explanation.textContent = assessment.explanation;
+                    assessmentSection.appendChild(explanation);
+                }
 
-                if (!Array.isArray(reports) || reports.length === 0) {
-                    container.textContent = "No reports available.";
+                if (isHighPriority(report)) {
+                    const priorityReason = document.createElement("p");
+                    priorityReason.className = "assessment-explanation";
+                    priorityReason.textContent =
+                        "Prioritized because the citizen selected High; this is not an independently verified severity.";
+                    assessmentSection.appendChild(priorityReason);
+                }
+
+                if (assessment.emergency_review === true) {
+                    const alert = document.createElement("div");
+                    alert.className = "emergency-review-alert";
+                    const alertTitle = document.createElement("strong");
+                    alertTitle.textContent = "Possible emergency · human review required";
+                    const alertReason = document.createElement("p");
+                    alertReason.textContent =
+                        `${assessment.emergency_reason || "A supported hazard indicator was detected."} This is not a verified emergency.`;
+                    const nextStep = document.createElement("p");
+                    nextStep.textContent = assessment.recommended_next_step ||
+                        "Escalate for immediate human verification.";
+                    alert.append(alertTitle, alertReason, nextStep);
+                    assessmentSection.appendChild(alert);
+                } else if (assessment.emergency_review === null) {
+                    const reviewUnavailable = document.createElement("p");
+                    reviewUnavailable.className = "assessment-explanation";
+                    reviewUnavailable.textContent =
+                        "Emergency status could not be assessed; review the original report manually.";
+                    assessmentSection.appendChild(reviewUnavailable);
+                }
+            } else {
+                const unavailable = document.createElement("p");
+                unavailable.textContent = "This backend response does not include an AI assessment.";
+                assessmentSection.appendChild(unavailable);
+            }
+
+            card.appendChild(assessmentSection);
+            card.dataset.searchText = [
+                report.type,
+                assessment?.category,
+                assessment?.department,
+                report.title,
+                report.location,
+                report.severity,
+                report.status,
+                report.id
+            ].join(" ").toLowerCase();
+            card.dataset.status = String(report.status || "").toLowerCase();
+            card.dataset.severity = normalizedSeverity;
+            card.dataset.priority = isHighPriority(report) ? "high" : normalizedSeverity;
+            card.dataset.emergency = assessment?.emergency_review === true ? "true" : "false";
+
+            return card;
+        }
+
+        async function loadTrafficInsight() {
+            const status = document.getElementById("trafficInsightStatus");
+            const recommendation = document.getElementById("trafficRecommendation");
+            const reason = document.getElementById("trafficRecommendationReason");
+
+            try {
+                const result = await fetchJSON("/traffic-analysis?congestion_level=MEDIUM&vehicle_count=6");
+                if (result.ai_status === "invalid_input" || !Number.isInteger(result.recommended_green_seconds)) {
+                    throw new Error(result.reason || "The analysis returned no usable recommendation.");
+                }
+                status.textContent = result.ai_status === "success"
+                    ? "AI-assisted recommendation · review before applying in the simulation."
+                    : "AI unavailable · transparent rule-based simulation fallback.";
+                recommendation.textContent = `${result.recommended_green_seconds}s green phase`;
+                reason.textContent = result.reason;
+            } catch (error) {
+                console.warn("Traffic insight unavailable:", error);
+                status.textContent = "Simulation analysis unavailable. No timing recommendation is shown.";
+                recommendation.textContent = "Unavailable";
+                reason.textContent = error.message;
+            }
+        }
+
+        const vehicleDetectionStatus = document.getElementById("vehicleDetectionStatus");
+        const vehicleDetectionProgress = document.getElementById("vehicleDetectionProgress");
+        const vehicleDetectionProgressBar =
+            document.querySelector(".vehicle-detection-progress");
+        const vehicleDetectionNote = document.getElementById("vehicleDetectionNote");
+        const startVehicleDetectionButton = document.getElementById("startVehicleDetection");
+        const refreshVehicleDetectionButton = document.getElementById("refreshVehicleDetection");
+        const annotatedVideoLink = document.getElementById("annotatedVideoLink");
+        let vehicleDetectionPoll = null;
+        let lastVehicleDetectionStatus = "idle";
+
+        function renderVehicleDetection(result) {
+            lastVehicleDetectionStatus = result.status || "idle";
+            const counts = result.vehicle_counts || {};
+            const hasObservedFrames = Number(result.processed_frames) > 0;
+            document.getElementById("vehicleCountCar").textContent =
+                hasObservedFrames ? (counts.car ?? 0) : "—";
+            document.getElementById("vehicleCountMotorcycle").textContent =
+                hasObservedFrames ? (counts.motorcycle ?? 0) : "—";
+            document.getElementById("vehicleCountBus").textContent =
+                hasObservedFrames ? (counts.bus ?? 0) : "—";
+            document.getElementById("vehicleCountTruck").textContent =
+                hasObservedFrames ? (counts.truck ?? 0) : "—";
+            document.getElementById("vehicleUniqueCount").textContent =
+                hasObservedFrames ? (result.total_unique_vehicles ?? 0) : "—";
+            document.getElementById("vehicleDetectionCount").textContent =
+                hasObservedFrames ? (result.total_detections ?? 0) : "—";
+            document.getElementById("vehicleUntrackedCount").textContent =
+                hasObservedFrames ? (result.untracked_detections ?? 0) : "—";
+            document.getElementById("vehicleFrameCount").textContent =
+                result.total_frames
+                    ? `${result.processed_frames ?? 0} / ${result.total_frames}`
+                    : (hasObservedFrames ? result.processed_frames : "—");
+            document.getElementById("vehiclePeakCount").textContent =
+                hasObservedFrames ? (result.peak_simultaneous_vehicles ?? 0) : "—";
+            document.getElementById("vehicleCongestion").textContent =
+                result.congestion_estimate
+                    ? `${result.congestion_estimate} · demo estimate`
+                    : "—";
+
+            const progress = Number(result.progress_percent) || 0;
+            vehicleDetectionProgress.style.width = `${Math.max(0, Math.min(progress, 100))}%`;
+            vehicleDetectionProgressBar.setAttribute("aria-valuenow", String(progress));
+            vehicleDetectionNote.textContent = result.congestion_basis ||
+                "Congestion uses peak simultaneous detections from the recorded clip only; " +
+                "it is not a verified real-world traffic measurement.";
+            const stateLabel = result.status === "failed" || result.status === "error"
+                ? "Failed"
+                : result.status === "completed"
+                    ? "Completed"
+                    : result.status === "running"
+                        ? "Processing"
+                        : result.status === "queued"
+                            ? "Queued"
+                            : result.status || "Status unavailable";
+            const failureDetail = result.error_message || result.message;
+            vehicleDetectionStatus.textContent =
+                `${result.video_label || "RECORDED VIDEO DEMO — NOT LIVE CCTV"} · ` +
+                `${stateLabel}${stateLabel === "Failed" && failureDetail ? `: ${failureDetail}` :
+                    result.message && result.status !== "completed" ? ` · ${result.message}` : ""}`;
+            vehicleDetectionStatus.classList.toggle(
+                "vehicle-detection-error",
+                result.status === "failed" || result.status === "error"
+            );
+            startVehicleDetectionButton.disabled =
+                result.status === "queued" || result.status === "running";
+            startVehicleDetectionButton.textContent =
+                result.status === "queued" || result.status === "running"
+                    ? "Processing…"
+                    : result.status === "completed"
+                        ? "Run demo again"
+                        : "Process recorded video";
+
+            if (result.status === "completed" && result.output_video_url) {
+                annotatedVideoLink.href = `${API_URL}${result.output_video_url}`;
+                annotatedVideoLink.hidden = false;
+            } else {
+                annotatedVideoLink.hidden = true;
+            }
+        }
+
+        async function loadVehicleDetection() {
+            refreshVehicleDetectionButton.disabled = true;
+            try {
+                const result = await fetchJSON("/vehicle-detection/status");
+                renderVehicleDetection(result);
+                if (vehicleDetectionPoll) {
+                    window.clearTimeout(vehicleDetectionPoll);
+                    vehicleDetectionPoll = null;
+                }
+
+                if (result.status === "queued" || result.status === "running") {
+                    vehicleDetectionPoll = window.setTimeout(loadVehicleDetection, 2000);
+                } else if (result.status === "completed") {
+                    const finalResult = await fetchJSON("/vehicle-detection/results");
+                    renderVehicleDetection(finalResult);
+                }
+            } catch (error) {
+                vehicleDetectionStatus.textContent =
+                    `RECORDED VIDEO DEMO — NOT LIVE CCTV · Status unavailable: ${error.message}`;
+                vehicleDetectionStatus.classList.add("vehicle-detection-error");
+                if (lastVehicleDetectionStatus !== "queued" &&
+                    lastVehicleDetectionStatus !== "running") {
+                    startVehicleDetectionButton.disabled = false;
+                }
+            } finally {
+                refreshVehicleDetectionButton.disabled = false;
+            }
+        }
+
+        async function startVehicleDetection() {
+            startVehicleDetectionButton.disabled = true;
+            vehicleDetectionStatus.classList.remove("vehicle-detection-error");
+            vehicleDetectionStatus.textContent =
+                "RECORDED VIDEO DEMO — NOT LIVE CCTV · Requesting background processing…";
+            try {
+                const result = await fetchJSON("/vehicle-detection/start", { method: "POST" });
+                renderVehicleDetection(result);
+                await loadVehicleDetection();
+            } catch (error) {
+                vehicleDetectionStatus.textContent =
+                    `RECORDED VIDEO DEMO — NOT LIVE CCTV · Failed: ${error.message}`;
+                vehicleDetectionStatus.classList.add("vehicle-detection-error");
+                startVehicleDetectionButton.disabled = false;
+            }
+        }
+
+        startVehicleDetectionButton.addEventListener("click", startVehicleDetection);
+        refreshVehicleDetectionButton.addEventListener("click", loadVehicleDetection);
+
+        async function loadReports() {
+            reportsContainer.setAttribute("aria-busy", "true");
+            dashboardMessage.hidden = true;
+            refreshButton.disabled = true;
+            refreshButton.textContent = "Loading…";
+            let summary = null;
+
+            try {
+                const results = await Promise.allSettled([
+                    fetchJSON("/reports"),
+                    loadDashboard()
+                ]);
+                const reportResult = results[0];
+                const dashboardResult = results[1];
+                summary = dashboardResult.status === "fulfilled" ? dashboardResult.value : null;
+
+                if (reportResult.status === "rejected") {
+                    throw reportResult.reason;
+                }
+                if (!Array.isArray(reportResult.value)) {
+                    throw new Error("/reports returned an unexpected response. Expected a list of reports.");
+                }
+                reports = reportResult.value;
+                updateReportStatistics(reports, summary);
+                updateAIServiceStatus(reports);
+
+                if (reports.length === 0) {
+                    reportCards = [];
+                    reportsContainer.innerHTML = '<p class="report-state">No reports have been submitted yet.</p>';
+                    if (dashboardResult.status === "rejected") {
+                        dashboardMessage.textContent =
+                            "The report list loaded, but the dashboard summary endpoint is unavailable. Counts use the report list.";
+                        dashboardMessage.hidden = false;
+                    }
                     return;
                 }
 
-                container.replaceChildren();
-
-                reports.forEach(function (report) {
-                    const card = document.createElement("div");
-                    card.className = "report-card";
-
-                    // Use textContent to display report values safely.
-                    const title = document.createElement("h3");
-                    title.textContent = report.title || "City Report";
-                    card.appendChild(title);
-
-                    const fields = [
-                        ["Description", report.description || ""],
-                        ["Location", report.location || "Unknown"],
-                        ["Severity", report.severity || "Medium"],
-                        ["Status", report.status || "Pending"],
-                        ["Type", report.type || "General"]
-                    ];
-
-                    fields.forEach(function ([label, value]) {
-                        const paragraph = document.createElement("p");
-                        const strong = document.createElement("strong");
-
-                        strong.textContent = label + ": ";
-                        paragraph.appendChild(strong);
-                        paragraph.appendChild(
-                            document.createTextNode(String(value))
-                        );
-
-                        card.appendChild(paragraph);
-                    });
-
-                    container.appendChild(card);
+                reports = reports.slice().sort(function (left, right) {
+                    const emergencyDifference =
+                        Number(right.ai_assessment?.emergency_review === true) -
+                        Number(left.ai_assessment?.emergency_review === true);
+                    const priorityDifference =
+                        Number(isHighPriority(right)) - Number(isHighPriority(left));
+                    return emergencyDifference || priorityDifference ||
+                        (Number(right.id) || 0) - (Number(left.id) || 0);
                 });
+                reportCards = reports.map(createReportCard);
+                reportsContainer.replaceChildren(...reportCards);
+                filterReports();
+                if (dashboardResult.status === "rejected") {
+                    dashboardMessage.textContent =
+                        "The report list loaded, but the dashboard summary endpoint is unavailable. Counts use the report list.";
+                    dashboardMessage.hidden = false;
+                }
             } catch (error) {
-                console.error(error);
-
-                container.textContent =
-                    "⚠️ Backend not connected. Start the CityGuard " +
-                    "FastAPI backend to view live reports at " +
-                    API_URL + ".";
+                console.error("Unable to load CityGuard reports:", error);
+                reportCards = [];
+                reports = [];
+                updateAIServiceStatus([]);
+                if (summary) {
+                    document.getElementById("totalReports").textContent =
+                        Number.isFinite(summary.total_reports) ? summary.total_reports : "—";
+                    document.getElementById("pendingReports").textContent =
+                        Number.isFinite(summary.pending_reports) ? summary.pending_reports : "—";
+                    document.getElementById("resolvedReports").textContent =
+                        Number.isFinite(summary.resolved_reports) ? summary.resolved_reports : "—";
+                    document.getElementById("highPriorityReports").textContent = "Unavailable";
+                } else {
+                    ["totalReports", "pendingReports", "resolvedReports", "highPriorityReports"]
+                        .forEach(function (id) {
+                            document.getElementById(id).textContent = "—";
+                        });
+                }
+                reportsContainer.replaceChildren();
+                const errorMessage = document.createElement("p");
+                errorMessage.className = "report-state report-error";
+                errorMessage.textContent =
+                    `${error.message} Check that the backend is running and reachable from this browser.`;
+                const retryButton = document.createElement("button");
+                retryButton.className = "refresh-button retry-button";
+                retryButton.type = "button";
+                retryButton.textContent = "Try again";
+                retryButton.addEventListener("click", loadReports);
+                reportsContainer.append(errorMessage, retryButton);
+                dashboardMessage.textContent = summary
+                    ? "Report details are unavailable. Summary metrics are shown, but high-priority count needs the report list."
+                    : `Live statistics are unavailable from ${API_URL}.`;
+                dashboardMessage.hidden = false;
+            } finally {
+                reportsContainer.setAttribute("aria-busy", "false");
+                refreshButton.disabled = false;
+                refreshButton.textContent = "Refresh";
             }
         }
 
-        loadDashboard();
+        function filterReports() {
+            const query = reportSearch.value.trim().toLowerCase();
+            const status = statusFilter.value;
+            const severity = severityFilter.value;
+            let visibleCount = 0;
+
+            reportCards.forEach(function (card) {
+                const matches = card.dataset.searchText.includes(query) &&
+                    (!status || card.dataset.status === status ||
+                        (status === "resolved" && ["complete", "completed", "closed"].includes(card.dataset.status))) &&
+                    (!severity || card.dataset.severity === severity);
+                card.hidden = !matches;
+                if (matches) {
+                    visibleCount += 1;
+                }
+            });
+
+            let emptyState = document.getElementById("reportSearchEmpty");
+            if (reportCards.length > 0 && visibleCount === 0) {
+                if (!emptyState) {
+                    emptyState = document.createElement("p");
+                    emptyState.id = "reportSearchEmpty";
+                    emptyState.className = "report-state";
+                    emptyState.textContent = "No reports match the current search and filters.";
+                    reportsContainer.appendChild(emptyState);
+                }
+            } else if (emptyState) {
+                emptyState.remove();
+            }
+        }
+
+        reportSearch.addEventListener("input", filterReports);
+        statusFilter.addEventListener("change", filterReports);
+        severityFilter.addEventListener("change", filterReports);
+        refreshButton.addEventListener("click", loadReports);
+        loadTrafficInsight();
+        loadVehicleDetection();
+        document.addEventListener("keydown", function (event) {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+                event.preventDefault();
+                reportSearch.focus();
+            }
+        });
+
         loadReports();
     </script>
 </body>

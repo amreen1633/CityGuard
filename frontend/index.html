@@ -10,99 +10,72 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
-
-    <header class="topbar">
-
-        <div>
-            <h1>🚦 CITYGUARD</h1>
-            <p>AI Smart City Command Center</p>
-        </div>
-
-        <a href="admin.html" class="admin-link">
-            Admin Dashboard
+<body class="citizen-page">
+    <header class="topbar citizen-topbar">
+        <a class="citizen-brand" href="index.html" aria-label="CityGuard AI citizen reporter">
+            <span class="citizen-brand-mark" aria-hidden="true">✓</span>
+            <span><strong>CityGuard <b>AI</b></strong><small>Safer cities, together</small></span>
         </a>
-
+        <a href="admin.html" class="admin-link">Admin dashboard <span aria-hidden="true">→</span></a>
     </header>
 
-
-    <main class="container">
-
-        <section class="hero">
-
-            <h2>Report a City Problem</h2>
-
-            <p>
-                Help make your city safer by reporting potholes,
-                garbage, damaged roads and other civic problems.
-            </p>
-
+    <main class="container citizen-container">
+        <section class="hero citizen-hero">
+            <p class="eyebrow">YOUR CITY. YOUR VOICE.</p>
+            <h1>Help make Hyderabad safer.</h1>
+            <p>Report a civic issue and help the right people take action. Add a clear description and photo so the team can understand the problem.</p>
+            <a class="citizen-secondary-link" href="admin.html">Explore city operations <span aria-hidden="true">→</span></a>
         </section>
 
+        <section class="card citizen-form-card">
+            <div class="citizen-form-heading">
+                <span class="form-step">01 <span> / REPORT AN ISSUE</span></span>
+                <h2>Tell us what needs attention</h2>
+                <p>Fields marked with * are required.</p>
+            </div>
 
-        <section class="card">
-
-            <h2>Submit a Report</h2>
-
-            <form id="reportForm">
-
-                <label>Problem Title</label>
-
-                <input type="text" id="title" placeholder="Example: Large pothole" required>
-
-
-                <label>Description</label>
-
-                <textarea id="description" placeholder="Describe the problem..." required></textarea>
-
-
-                <label>Location</label>
-
-                <input type="text" id="location" placeholder="Example: Madhapur" required>
-
-
-                <label>Severity</label>
-
-                <select id="severity">
-
-                    <option value="Low">
-                        Low
-                    </option>
-
-                    <option value="Medium" selected>
-                        Medium
-                    </option>
-
-                    <option value="High">
-                        High
-                    </option>
-
-                </select>
-
-
-                <label>Upload Photo</label>
-
-                <input type="file" id="image" accept="image/*" required>
-
-
-                <div id="imagePreviewContainer" class="image-preview-container">
-
-                    <img id="imagePreview" alt="Selected image preview">
-
+            <form id="reportForm" enctype="multipart/form-data">
+                <div class="form-field">
+                    <label for="title">Problem title <span aria-hidden="true">*</span></label>
+                    <input type="text" id="title" name="title" placeholder="Example: Large pothole on main road" autocomplete="off" required>
                 </div>
 
+                <div class="form-field">
+                    <label for="description">Description <span aria-hidden="true">*</span></label>
+                    <textarea id="description" name="description" placeholder="Describe what happened and any details that may help…" required></textarea>
+                </div>
 
-                <button type="submit" class="submit-button">
-                    🚨 Submit Report
-                </button>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="location">Location <span aria-hidden="true">*</span></label>
+                        <input type="text" id="location" name="location" placeholder="Area or nearby landmark" autocomplete="street-address" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="severity">Priority</label>
+                        <select id="severity" name="severity">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
 
+                <div class="form-field">
+                    <label for="image">Photo <span aria-hidden="true">*</span></label>
+                    <input type="file" id="image" name="image" accept="image/*" aria-describedby="photoHelp" required>
+                    <small id="photoHelp" class="field-help">A photo helps the city team assess the issue. Image files only.</small>
+                </div>
+
+                <div id="imagePreviewContainer" class="image-preview-container">
+                    <img id="imagePreview" alt="Preview of selected report photo">
+                    <p id="imagePreviewName" class="image-preview-name"></p>
+                </div>
+
+                <button type="submit" class="submit-button">Submit report <span aria-hidden="true">→</span></button>
             </form>
 
-
-            <div id="message" class="message"></div>
-
+            <div id="message" class="message" role="status" aria-live="polite"></div>
         </section>
-
     </main>
 
 
