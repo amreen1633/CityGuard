@@ -2,27 +2,315 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>CityGuard Admin</title>
+    <title>CityGuard Command Center</title>
 
     <link rel="stylesheet" href="style.css">
+
 </head>
+
 
 <body>
 
-    <h1>CityGuard Command Center</h1>
+    <header class="topbar">
 
-    <h2>Admin Dashboard</h2>
+        <div>
 
-    <div>
-        <p>Total Reports: 0</p>
-        <p>Emergencies: 0</p>
-        <p>Resolved: 0</p>
-    </div>
+            <h1>🚦 CITYGUARD</h1>
 
-    <script src="app.js"></script>
+            <p>AI Smart City Command Center</p>
+
+        </div>
+
+        <a href="index.html" class="admin-link">
+            Citizen Reporter
+        </a>
+
+    </header>
+
+
+    <main class="container">
+
+        <section class="hero">
+
+            <h2>Command Center Dashboard</h2>
+
+            <p>
+                Monitor citizen reports and city problems.
+            </p>
+
+        </section>
+
+
+        <!-- Dashboard statistics -->
+
+        <section class="card">
+
+            <h2>City Overview</h2>
+
+            <div class="dashboard-stats">
+
+                <div class="stat-card">
+
+                    <h3 id="totalReports">
+                        0
+                    </h3>
+
+                    <p>Total Reports</p>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <h3 id="emergencyReports">
+                        0
+                    </h3>
+
+                    <p>Emergencies</p>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <h3 id="pendingReports">
+                        0
+                    </h3>
+
+                    <p>Pending</p>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <h3 id="resolvedReports">
+                        0
+                    </h3>
+
+                    <p>Resolved</p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Reports -->
+
+        <section class="card">
+
+            <h2>Recent City Reports</h2>
+
+            <div id="reportsContainer">
+
+                <p>
+                    Loading reports...
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script>
+
+        const API_URL =
+            "http://127.0.0.1:8000";
+
+
+        async function loadDashboard() {
+
+            try {
+
+                const response =
+                    await fetch(`${API_URL}/dashboard`);
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Dashboard request failed"
+                    );
+
+                }
+
+                const data =
+                    await response.json();
+
+
+                document.getElementById(
+                    "totalReports"
+                ).textContent =
+                    data.total_reports;
+
+
+                document.getElementById(
+                    "emergencyReports"
+                ).textContent =
+                    data.total_emergencies;
+
+
+                document.getElementById(
+                    "pendingReports"
+                ).textContent =
+                    data.pending_reports;
+
+
+                document.getElementById(
+                    "resolvedReports"
+                ).textContent =
+                    data.resolved_reports;
+
+
+            } catch (error) {
+
+                console.log(
+                    "Dashboard API unavailable"
+                );
+
+            }
+
+        }
+
+
+        async function loadReports() {
+
+            const container =
+                document.getElementById(
+                    "reportsContainer"
+                );
+
+
+            try {
+
+                const response =
+                    await fetch(`${API_URL}/reports`);
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Reports request failed"
+                    );
+
+                }
+
+
+                const reports =
+                    await response.json();
+
+
+                if (
+                    !reports ||
+                    reports.length === 0
+                ) {
+
+                    container.innerHTML =
+                        "<p>No reports available.</p>";
+
+                    return;
+
+                }
+
+
+                container.innerHTML = "";
+
+
+                reports.forEach(function (report) {
+
+                    const card =
+                        document.createElement("div");
+
+
+                    card.className =
+                        "report-card";
+
+
+                    card.innerHTML = `
+
+                <h3>
+                    ${report.title || "City Report"}
+                </h3>
+
+                <p>
+                    <strong>Description:</strong>
+                    ${report.description || ""}
+                </p>
+
+                <p>
+                    <strong>Location:</strong>
+                    ${report.location || "Unknown"}
+                </p>
+
+                <p>
+                    <strong>Severity:</strong>
+                    ${report.severity || "Medium"}
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+                    ${report.status || "Pending"}
+                </p>
+
+                <p>
+                    <strong>Type:</strong>
+                    ${report.type || "General"}
+                </p>
+
+            `;
+
+
+                    container.appendChild(card);
+
+                });
+
+
+            } catch (error) {
+
+                console.error(error);
+
+
+                container.innerHTML = `
+
+            <div class="report-card">
+
+                <h3>
+                    ⚠️ Backend Not Connected
+                </h3>
+
+                <p>
+                    Start the CityGuard FastAPI
+                    backend to view live reports.
+                </p>
+
+                <p>
+                    Backend:
+                    http://127.0.0.1:8000
+                </p>
+
+            </div>
+
+        `;
+
+            }
+
+        }
+
+
+        loadDashboard();
+
+        loadReports();
+
+    </script>
+
 
 </body>
 
