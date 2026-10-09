@@ -1,13 +1,16 @@
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from unittest.mock import patch
+from urllib.error import HTTPError, URLError
+from unittest.mock import MagicMock, patch
 
 from traffic.vehicle_detection.detect_vehicles import (
     VideoDetectionJob,
     estimate_congestion,
+    get_video_path,
     process_video,
 )
 
@@ -68,6 +71,203 @@ class FakeBackgroundTasks:
 
 
 class VehicleDetectionTests(unittest.TestCase):
+    def test_video_path_defaults_to_repository_sample(self):
+        with patch.dict(os.environ, {"CITYGUARD_VIDEO_PATH": ""}):
+            self.assertEqual(
+                get_video_path(),
+                Path(__file__).resolve().parents[2] / "traffic_videos" / "video3.mp4",
+            )
+
+    def test_video_path_uses_configured_absolute_path(self):
+        configured_path = Path("C:/cityguard-media/video3.mp4")
+        with patch.dict(os.environ, {"CITYGUARD_VIDEO_PATH": str(configured_path)}):
+            self.assertEqual(get_video_path(), configured_path.resolve())
+
+    def test_explicit_local_path_takes_precedence_over_remote_url(self):
+        configured_path = Path("C:/cityguard-media/video3.mp4")
+        with patch.dict(
+            os.environ,
+            {
+                "CITYGUARD_VIDEO_PATH": str(configured_path),
+                "CITYGUARD_VIDEO_URL": "https://example.invalid/video3.mp4",
+            },
+        ), patch("traffic.vehicle_detection.detect_vehicles._download_video") as download:
+            self.assertEqual(get_video_path(), configured_path.resolve())
+        download.assert_not_called()
+
+    def test_video_path_resolves_relative_configuration_from_project_root(self):
+        configured_path = "media/video3.mp4"
+        expected = Path(__file__).resolve().parents[2] / configured_path
+        with patch.dict(os.environ, {"CITYGUARD_VIDEO_PATH": configured_path}):
+            self.assertEqual(get_video_path(), expected.resolve())
+
+    def test_processing_uses_configured_video_path_at_runtime(self):
+        configured_path = Path("C:/render-media/missing-video.mp4")
+        with patch.dict(os.environ, {"CITYGUARD_VIDEO_PATH": str(configured_path)}):
+            with self.assertRaises(FileNotFoundError) as error:
+                process_video(output_path=configured_path.with_name("output.mp4"))
+        self.assertIn(str(configured_path), str(error.exception))
+
+    def test_video_url_downloads_once_and_reuses_nonempty_cache(self):
+        response = MagicMock()
+        response.headers.get_content_type.return_value = "video/mp4"
+        response.read.side_effect = [b"video-content", b""]
+        urlopen = MagicMock()
+        urlopen.return_value.__enter__.return_value = response
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "cityguard" / "video3.mp4"
+            with patch.dict(
+                os.environ,
+                {
+                    "CITYGUARD_VIDEO_PATH": "",
+                    "CITYGUARD_VIDEO_URL": "https://drive.google.com/uc?export=download&id=demo",
+                },
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.VIDEO_CACHE_PATH",
+                cache_path,
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.urlopen",
+                urlopen,
+            ):
+                first_path = get_video_path()
+                second_path = get_video_path()
+
+            self.assertEqual(first_path, cache_path)
+            self.assertEqual(second_path, cache_path)
+            self.assertEqual(cache_path.read_bytes(), b"video-content")
+            urlopen.assert_called_once()
+
+    def test_empty_video_cache_is_downloaded_again(self):
+        response = MagicMock()
+        response.headers.get_content_type.return_value = "video/mp4"
+        response.read.side_effect = [b"recovered-video", b""]
+        urlopen = MagicMock()
+        urlopen.return_value.__enter__.return_value = response
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "video3.mp4"
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.touch()
+            with patch.dict(
+                os.environ,
+                {
+                    "CITYGUARD_VIDEO_PATH": "",
+                    "CITYGUARD_VIDEO_URL": "https://drive.google.com/uc?export=download&id=demo",
+                },
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.VIDEO_CACHE_PATH",
+                cache_path,
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.urlopen",
+                urlopen,
+            ):
+                get_video_path()
+
+            self.assertEqual(cache_path.read_bytes(), b"recovered-video")
+            urlopen.assert_called_once()
+
+    def test_download_failure_does_not_expose_url_or_leave_partial_cache(self):
+        secret_url = "https://drive.google.com/download?token=secret-value"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "video3.mp4"
+            with patch.dict(
+                os.environ,
+                {"CITYGUARD_VIDEO_PATH": "", "CITYGUARD_VIDEO_URL": secret_url},
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.VIDEO_CACHE_PATH",
+                cache_path,
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.urlopen",
+                side_effect=URLError("private network detail"),
+            ):
+                with self.assertLogs(
+                    "traffic.vehicle_detection.detect_vehicles",
+                    level="WARNING",
+                ) as captured_logs:
+                    with self.assertRaisesRegex(
+                        RuntimeError,
+                        "network or URL error",
+                    ) as raised_error:
+                        get_video_path()
+
+            self.assertNotIn(secret_url, str(raised_error.exception))
+            self.assertNotIn(secret_url, "\n".join(captured_logs.output))
+            self.assertFalse(cache_path.exists())
+            self.assertEqual(list(cache_path.parent.glob("*.download")), [])
+
+    def test_http_download_error_reports_status_without_url(self):
+        secret_url = "https://drive.google.com/download?token=secret-value"
+        http_error = HTTPError(secret_url, 403, "Forbidden", None, None)
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "video3.mp4"
+            with patch.dict(
+                os.environ,
+                {"CITYGUARD_VIDEO_PATH": "", "CITYGUARD_VIDEO_URL": secret_url},
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.VIDEO_CACHE_PATH",
+                cache_path,
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.urlopen",
+                side_effect=http_error,
+            ):
+                with self.assertLogs(
+                    "traffic.vehicle_detection.detect_vehicles",
+                    level="WARNING",
+                ) as captured_logs:
+                    with self.assertRaisesRegex(RuntimeError, "HTTP 403") as error:
+                        get_video_path()
+
+            self.assertNotIn(secret_url, str(error.exception))
+            self.assertNotIn(secret_url, "\n".join(captured_logs.output))
+            self.assertFalse(cache_path.exists())
+
+    def test_download_timeout_has_network_error_message(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "video3.mp4"
+            with patch.dict(
+                os.environ,
+                {
+                    "CITYGUARD_VIDEO_PATH": "",
+                    "CITYGUARD_VIDEO_URL": "https://drive.google.com/uc?export=download&id=demo",
+                },
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.VIDEO_CACHE_PATH",
+                cache_path,
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.urlopen",
+                side_effect=TimeoutError("request timed out"),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "download timed out"):
+                    get_video_path()
+            self.assertFalse(cache_path.exists())
+
+    def test_html_download_response_is_rejected_without_caching(self):
+        response = MagicMock()
+        response.headers.get_content_type.return_value = "text/html"
+        urlopen = MagicMock()
+        urlopen.return_value.__enter__.return_value = response
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "video3.mp4"
+            with patch.dict(
+                os.environ,
+                {
+                    "CITYGUARD_VIDEO_PATH": "",
+                    "CITYGUARD_VIDEO_URL": "https://drive.google.com/uc?export=download&id=demo",
+                },
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.VIDEO_CACHE_PATH",
+                cache_path,
+            ), patch(
+                "traffic.vehicle_detection.detect_vehicles.urlopen",
+                urlopen,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "returned a web page"):
+                    get_video_path()
+
+            self.assertFalse(cache_path.exists())
+
     def test_congestion_thresholds_are_explicit(self):
         self.assertEqual(estimate_congestion(0), "low")
         self.assertEqual(estimate_congestion(3), "low")

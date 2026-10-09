@@ -18,6 +18,36 @@ network access and enough disk space. Set `CITYGUARD_YOLO_MODEL` only if you
 want the API job to use another locally available or supported model name; no
 camera credentials or API keys are needed.
 
+## Render video file
+
+The default video is the repository-local `traffic_videos/video3.mp4`. An
+explicit `CITYGUARD_VIDEO_PATH` always takes precedence and points to a local
+file (relative paths resolve from the repository root; absolute paths are
+recommended on Render).
+
+The sample video is intentionally excluded by the repository's `.gitignore`,
+so it is not present in a normal GitHub deployment. Do not commit it or make a
+private incident video world-readable to work around this. Alternatively, set
+`CITYGUARD_VIDEO_URL` to an HTTPS direct-download URL for the demo video. With
+this option the backend downloads to a cache at
+`<system-temp>\cityguard\video3.mp4` (on Render, normally
+`/tmp/cityguard/video3.mp4`) only when that file is missing or empty. A
+non-empty cache is reused rather than downloaded on each processing request.
+For Google Drive, use its direct-download URL form, such as
+`https://drive.google.com/uc?export=download&id=FILE_ID`, and ensure the file's
+sharing settings allow the Render service to download it. Google Drive may
+return a confirmation or sign-in HTML page instead; the backend rejects that
+response rather than caching it as a video.
+
+For a private clip, a persistent disk (if available for the Render service
+plan) or private object storage with a short-lived, read-only signed URL is
+safer than a public share link. Store the URL only in Render's environment
+settings/secrets, never in source code; errors and logs do not include its
+value. Render's ordinary instance filesystem and `/tmp` cache can be ephemeral,
+so the video may need to download again after restart or redeploy. Configure
+`CITYGUARD_VIDEO_PATH` instead if the file is already present on a mounted disk;
+when both variables are set, the explicit local path wins.
+
 ## Run the video processor directly
 
 ```powershell

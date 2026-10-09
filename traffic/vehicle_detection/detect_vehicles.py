@@ -1,4 +1,4 @@
-"""YOLO vehicle detection for the recorded CityGuard video demo."""
+"YOLO vehicle detection for the recorded CityGuard video demo."
 
 from __future__ import annotations
 
@@ -6,13 +6,19 @@ import argparse
 import json
 import logging
 import os
+import tempfile
 import threading
 from pathlib import Path
 from typing import Callable, Protocol
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_VIDEO_PATH = PROJECT_ROOT / "traffic_videos" / "video3.mp4"
-DEFAULT_OUTPUT_PATH = Path(__file__).resolve().parent / "outputs" / "video3_annotated.mp4"
+VIDEO_CACHE_PATH = Path(tempfile.gettempdir()) / "cityguard" / "video3.mp4"
+DEFAULT_OUTPUT_PATH = Path(__file__).resolve(
+).parent / "outputs" / "video3_annotated.mp4"
 DEFAULT_MODEL = os.environ.get("CITYGUARD_YOLO_MODEL", "yolo11n.pt")
 VEHICLE_CLASSES = {2: "car", 3: "motorcycle", 5: "bus", 7: "truck"}
 CONGESTION_BASIS = (
@@ -21,10 +27,115 @@ CONGESTION_BASIS = (
 )
 
 logger = logging.getLogger(__name__)
+_video_download_lock = threading.Lock()
 
 
 class BackgroundTaskSink(Protocol):
     def add_task(self, function: Callable[[], None]) -> None: ...
+
+
+def get_video_path() -> Path:
+    """Resolve the local override, remote cache, or repository sample in order."""
+    configured_path = os.environ.get("CITYGUARD_VIDEO_PATH", "").strip()
+    if configured_path:
+        path = Path(configured_path).expanduser()
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        return path.resolve()
+
+    video_url = os.environ.get("CITYGUARD_VIDEO_URL", "").strip()
+    if not video_url:
+        return DEFAULT_VIDEO_PATH
+
+    with _video_download_lock:
+        if VIDEO_CACHE_PATH.is_file() and VIDEO_CACHE_PATH.stat().st_size > 0:
+            return VIDEO_CACHE_PATH
+        _download_video(video_url, VIDEO_CACHE_PATH)
+        return VIDEO_CACHE_PATH
+
+
+def _download_video(video_url: str, destination: Path) -> None:
+    """Download to a temporary file, then atomically publish the completed cache."""
+    try:
+        parsed_url = urlsplit(video_url)
+    except ValueError:
+        raise RuntimeError(
+            "CITYGUARD_VIDEO_URL must be a valid HTTPS download URL."
+        ) from None
+    if parsed_url.scheme.lower() != "https" or not parsed_url.hostname:
+        raise RuntimeError("CITYGUARD_VIDEO_URL must be a valid HTTPS download URL.")
+
+    temporary_path: Path | None = None
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        request = Request(video_url, headers={"User-Agent": "CityGuard-Video-Demo/1.0"})
+        with urlopen(request, timeout=60) as response:
+            content_type = response.headers.get_content_type().lower()
+            if content_type in {"text/html", "application/xhtml+xml"}:
+                raise RuntimeError(
+                    "The configured video URL returned a web page instead of the video. "
+                    "Use a Google Drive direct-download URL and ensure the file is accessible."
+                )
+
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                prefix=f".{destination.name}.",
+                suffix=".download",
+                dir=destination.parent,
+                delete=False,
+            ) as temporary_file:
+                temporary_path = Path(temporary_file.name)
+                first_chunk = response.read(64 * 1024)
+                if not first_chunk:
+                    raise RuntimeError("The configured video URL returned an empty file.")
+                if first_chunk.lstrip().lower().startswith((b"<!doctype html", b"<html")):
+                    raise RuntimeError(
+                        "The configured video URL returned a web page instead of the video. "
+                        "Use a Google Drive direct-download URL and ensure the file is accessible."
+                    )
+
+                temporary_file.write(first_chunk)
+                while chunk := response.read(1024 * 1024):
+                    temporary_file.write(chunk)
+
+        if temporary_path.stat().st_size == 0:
+            raise RuntimeError("The configured video URL returned an empty file.")
+        os.replace(temporary_path, destination)
+        temporary_path = None
+    except HTTPError as error:
+        logger.warning("Recorded-video download failed with HTTP status %s", error.code)
+        raise RuntimeError(
+            f"Could not download the recorded video (HTTP {error.code}). "
+            "Check the URL and file-sharing permissions."
+        ) from None
+    except URLError:
+        logger.warning("Recorded-video download failed due to a URL or network error")
+        raise RuntimeError(
+            "Could not download the recorded video because of a network or URL error. "
+            "Check the URL and outbound network access."
+        ) from None
+    except TimeoutError:
+        logger.warning("Recorded-video download timed out")
+        raise RuntimeError(
+            "The recorded-video download timed out. Check outbound network access and try again."
+        ) from None
+    except OSError as error:
+        logger.warning(
+            "Recorded-video download failed due to a local file error (%s)",
+            type(error).__name__,
+        )
+        raise RuntimeError(
+            "Could not save the downloaded video to the local cache. "
+            "Check that the Render service can write to its temporary directory."
+        ) from None
+    except ValueError:
+        logger.warning("Recorded-video download failed because its URL is invalid")
+        raise RuntimeError(
+            "CITYGUARD_VIDEO_URL is invalid. Provide a valid HTTPS direct-download URL."
+        ) from None
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 def estimate_congestion(peak_simultaneous_vehicles: int) -> str:
@@ -43,7 +154,8 @@ def _to_list(value: object) -> list:
         value = value.cpu()
     if hasattr(value, "tolist"):
         value = value.tolist()
-    return value if isinstance(value, list) else list(value)  # type: ignore[arg-type]
+    # type: ignore[arg-type]
+    return value if isinstance(value, list) else list(value)
 
 
 def _empty_summary() -> dict[str, object]:
@@ -67,13 +179,14 @@ def _empty_summary() -> dict[str, object]:
 
 
 def process_video(
-    video_path: Path | str = DEFAULT_VIDEO_PATH,
+    video_path: Path | str | None = None,
     output_path: Path | str = DEFAULT_OUTPUT_PATH,
     model_name: str = DEFAULT_MODEL,
     progress_callback: Callable[[dict[str, object]], None] | None = None,
 ) -> dict[str, object]:
     """Track supported COCO vehicles in a clip and save an annotated MP4."""
-    source = Path(video_path).expanduser().resolve()
+    source = Path(video_path).expanduser().resolve(
+    ) if video_path is not None else get_video_path()
     destination = Path(output_path).expanduser().resolve()
     if not source.is_file():
         raise FileNotFoundError(f"Recorded video was not found: {source}")
@@ -119,7 +232,8 @@ def process_video(
         height, width = frame.shape[:2]
         destination.parent.mkdir(parents=True, exist_ok=True)
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(str(destination), fourcc, fps, (width, height))
+        writer = cv2.VideoWriter(
+            str(destination), fourcc, fps, (width, height))
         if not writer.isOpened():
             raise RuntimeError(
                 f"OpenCV could not create the annotated MP4: {destination}. "
@@ -159,7 +273,8 @@ def process_video(
 
             result = results[0] if results else None
             boxes = getattr(result, "boxes", None)
-            class_ids = _to_list(boxes.cls) if boxes is not None and boxes.cls is not None else []
+            class_ids = _to_list(
+                boxes.cls) if boxes is not None and boxes.cls is not None else []
             track_ids = (
                 _to_list(boxes.id)
                 if boxes is not None and boxes.id is not None
@@ -174,7 +289,8 @@ def process_video(
 
                 total_detections += 1
                 observed_this_frame += 1
-                track_id = int(track_ids[index]) if index < len(track_ids) else None
+                track_id = int(track_ids[index]) if index < len(
+                    track_ids) else None
                 if track_id is None:
                     untracked_detections += 1
                 else:
@@ -230,7 +346,8 @@ def process_video(
             ok, frame = capture.read()
 
         if processed_frames == 0:
-            raise RuntimeError(f"No video frames were processed from {source}.")
+            raise RuntimeError(
+                f"No video frames were processed from {source}.")
         if total_frames and processed_frames + max(2, round(total_frames * 0.01)) < total_frames:
             raise RuntimeError(
                 f"Video reading stopped after {processed_frames} of {total_frames} "
@@ -265,7 +382,8 @@ class VideoDetectionJob:
     def start(self, background_tasks: BackgroundTaskSink) -> dict[str, object]:
         with self._lock:
             if self._state["status"] in {"queued", "running"}:
-                raise RuntimeError("Recorded-video processing is already running.")
+                raise RuntimeError(
+                    "Recorded-video processing is already running.")
             self._state = {
                 **_empty_summary(),
                 "status": "queued",
@@ -274,7 +392,8 @@ class VideoDetectionJob:
         try:
             background_tasks.add_task(self.run)
         except Exception as error:
-            logger.exception("Could not queue recorded-video vehicle detection")
+            logger.exception(
+                "Could not queue recorded-video vehicle detection")
             with self._lock:
                 self._state.update(
                     status="failed",
@@ -305,7 +424,8 @@ class VideoDetectionJob:
 
         with self._lock:
             self._state.update(
-                {key: value for key, value in summary.items() if key != "output_file"}
+                {key: value for key, value in summary.items() if key !=
+                 "output_file"}
             )
             self._state["error_message"] = None
             self._state["output_video_url"] = "/vehicle-detection/video"
@@ -318,7 +438,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Process the CityGuard recorded-video vehicle detection demo."
     )
-    parser.add_argument("--video", type=Path, default=DEFAULT_VIDEO_PATH)
+    parser.add_argument("--video", type=Path, default=None)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_PATH)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     args = parser.parse_args()
