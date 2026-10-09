@@ -17,11 +17,12 @@ const imagePreviewName =
 const submitButton =
     reportForm.querySelector('button[type="submit"]');
 
-const pageHost = window.location.hostname;
-const API_HOST = !pageHost || pageHost === "localhost" || pageHost === "127.0.0.1"
-    ? "127.0.0.1"
-    : pageHost;
-const API_URL = `http://${API_HOST}:8000`;
+
+const API_URL = window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+    ? "http://127.0.0.1:8000"
+    : "https://cityguard-backend-cri9.onrender.com";
+
 let previewURL = null;
 
 imageInput.addEventListener("change", function () {

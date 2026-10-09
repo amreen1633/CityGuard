@@ -214,7 +214,8 @@
                         <h2 id="vehicleDetectionTitle">Recorded-video vehicle detection</h2>
                         <p>traffic_videos/video3.mp4 · YOLO and ByteTrack analysis</p>
                     </div>
-                    <span class="simulation-badge"><span aria-hidden="true"></span> RECORDED VIDEO DEMO — NOT LIVE CCTV</span>
+                    <span class="simulation-badge"><span aria-hidden="true"></span> RECORDED VIDEO DEMO — NOT LIVE
+                        CCTV</span>
                 </div>
                 <p id="vehicleDetectionStatus" class="vehicle-detection-status" role="status" aria-live="polite">
                     Checking recorded-video processing status…
@@ -224,23 +225,54 @@
                     <span id="vehicleDetectionProgress"></span>
                 </div>
                 <dl class="vehicle-detection-metrics">
-                    <div><dt>Cars</dt><dd id="vehicleCountCar">—</dd></div>
-                    <div><dt>Motorcycles</dt><dd id="vehicleCountMotorcycle">—</dd></div>
-                    <div><dt>Buses</dt><dd id="vehicleCountBus">—</dd></div>
-                    <div><dt>Trucks</dt><dd id="vehicleCountTruck">—</dd></div>
-                    <div><dt>Unique tracked vehicles</dt><dd id="vehicleUniqueCount">—</dd></div>
-                    <div><dt>Frame detections</dt><dd id="vehicleDetectionCount">—</dd></div>
-                    <div><dt>Untracked detections</dt><dd id="vehicleUntrackedCount">—</dd></div>
-                    <div><dt>Processed frames</dt><dd id="vehicleFrameCount">—</dd></div>
-                    <div><dt>Peak in one frame</dt><dd id="vehiclePeakCount">—</dd></div>
-                    <div><dt>Demo congestion estimate</dt><dd id="vehicleCongestion">—</dd></div>
+                    <div>
+                        <dt>Cars</dt>
+                        <dd id="vehicleCountCar">—</dd>
+                    </div>
+                    <div>
+                        <dt>Motorcycles</dt>
+                        <dd id="vehicleCountMotorcycle">—</dd>
+                    </div>
+                    <div>
+                        <dt>Buses</dt>
+                        <dd id="vehicleCountBus">—</dd>
+                    </div>
+                    <div>
+                        <dt>Trucks</dt>
+                        <dd id="vehicleCountTruck">—</dd>
+                    </div>
+                    <div>
+                        <dt>Unique tracked vehicles</dt>
+                        <dd id="vehicleUniqueCount">—</dd>
+                    </div>
+                    <div>
+                        <dt>Frame detections</dt>
+                        <dd id="vehicleDetectionCount">—</dd>
+                    </div>
+                    <div>
+                        <dt>Untracked detections</dt>
+                        <dd id="vehicleUntrackedCount">—</dd>
+                    </div>
+                    <div>
+                        <dt>Processed frames</dt>
+                        <dd id="vehicleFrameCount">—</dd>
+                    </div>
+                    <div>
+                        <dt>Peak in one frame</dt>
+                        <dd id="vehiclePeakCount">—</dd>
+                    </div>
+                    <div>
+                        <dt>Demo congestion estimate</dt>
+                        <dd id="vehicleCongestion">—</dd>
+                    </div>
                 </dl>
                 <p id="vehicleDetectionNote" class="vehicle-detection-note">
                     Congestion is estimated from the clip’s peak simultaneous detections only. It is not a verified
                     real-world traffic measurement; no signal control is connected.
                 </p>
                 <div class="vehicle-detection-actions">
-                    <button class="primary-button" id="startVehicleDetection" type="button">Process recorded video</button>
+                    <button class="primary-button" id="startVehicleDetection" type="button">Process recorded
+                        video</button>
                     <button class="refresh-button" id="refreshVehicleDetection" type="button">Refresh status</button>
                     <a class="text-link" id="annotatedVideoLink" href="#" hidden>Open annotated video <span
                             aria-hidden="true">→</span></a>
@@ -254,10 +286,12 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const pageHost = window.location.hostname;
-        const API_HOST = !pageHost || pageHost === "localhost" || pageHost === "127.0.0.1"
-            ? "127.0.0.1"
-            : pageHost;
-        const API_URL = `http://${API_HOST}:8000`;
+
+        const API_URL = window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1"
+            ? "http://127.0.0.1:8000"
+            : "https://cityguard-backend-cri9.onrender.com";
+
         const reportSearch = document.getElementById("reportSearch");
         const dashboardMessage = document.getElementById("dashboardMessage");
         const reportsContainer = document.getElementById("reportsContainer");
