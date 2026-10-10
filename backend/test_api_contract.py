@@ -169,6 +169,28 @@ class BackendApiContractTests(unittest.TestCase):
         self.assertEqual(response.json(), recommendation)
         recommend.assert_called_once_with("HIGH", "10+")
 
+    def test_traffic_analysis_endpoint_supports_explicit_rule_based_mode(self):
+        recommendation = {
+            "ai_status": "rule_based",
+            "congestion_level": "medium",
+            "vehicle_count": "6",
+            "directional_counts_available": False,
+            "recommended_green_seconds": 40,
+            "reason": "The medium simulation level with 6 displayed vehicles maps to a 40 second green phase in the transparent demo rule.",
+        }
+        with patch.object(
+            self.main,
+            "recommend_traffic_signal_timing",
+            return_value=recommendation,
+        ) as recommend:
+            response = self.client.get(
+                "/traffic-analysis?congestion_level=MEDIUM&vehicle_count=6&rule_based=true"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), recommendation)
+        recommend.assert_called_once_with("MEDIUM", "6", rule_based=True)
+
     def test_recorded_video_status_and_results_endpoints_expose_demo_metrics(self):
         status_response = self.client.get("/vehicle-detection/status")
         results_response = self.client.get("/vehicle-detection/results")
@@ -197,6 +219,32 @@ class BackendApiContractTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "failed")
         self.assertEqual(response.json()["error_message"], "YOLO weights could not be loaded.")
+
+    def test_vehicle_detection_status_exposes_each_workflow_state(self):
+        states = {
+            "idle": {"processed_frames": 0, "progress_percent": 0},
+            "queued": {"processed_frames": 0, "progress_percent": 0},
+            "running": {"processed_frames": 12, "progress_percent": 40},
+            "processing": {"processed_frames": 18, "progress_percent": 60},
+            "completed": {"processed_frames": 30, "progress_percent": 100},
+            "failed": {
+                "processed_frames": 8,
+                "progress_percent": 26,
+                "error_message": "Video decoding failed.",
+            },
+        }
+        for status, details in states.items():
+            with self.subTest(status=status), patch.object(
+                self.main.video_detection_job,
+                "snapshot",
+                return_value={"status": status, **details},
+            ):
+                response = self.client.get("/vehicle-detection/status")
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["status"], status)
+            for key, value in details.items():
+                self.assertEqual(response.json()[key], value)
 
     def test_recorded_video_start_queues_without_changing_existing_routes(self):
         queued = {

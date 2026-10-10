@@ -156,9 +156,16 @@ def create_report(
 @app.get("/traffic-analysis")
 def traffic_analysis(
     congestion_level: str = Query(...),
-    vehicle_count: str = Query(...)
+    vehicle_count: str = Query(...),
+    rule_based: bool = Query(False),
 ):
     """Return a simulation-only timing recommendation; it never applies a signal."""
+    if rule_based:
+        return recommend_traffic_signal_timing(
+            congestion_level,
+            vehicle_count,
+            rule_based=True,
+        )
     return recommend_traffic_signal_timing(congestion_level, vehicle_count)
 
 

@@ -420,7 +420,12 @@ def analyze_civic_report(title: str, description: str):
     }
 
 
-def recommend_traffic_signal_timing(congestion_level: str, vehicle_count: str):
+def recommend_traffic_signal_timing(
+    congestion_level: str,
+    vehicle_count: str,
+    *,
+    rule_based: bool = False,
+):
     """Recommend a simulation-only green phase from aggregate simulated inputs."""
     level = congestion_level.strip().lower() if isinstance(congestion_level, str) else ""
     if level not in {"low", "medium", "high"}:
@@ -459,6 +464,16 @@ def recommend_traffic_signal_timing(congestion_level: str, vehicle_count: str):
         f"The {level} simulation level with {vehicle_count} displayed vehicles "
         f"maps to a {fallback_durations[level]} second green phase in the transparent demo rule."
     )
+
+    if rule_based:
+        return {
+            "ai_status": "rule_based",
+            "congestion_level": level,
+            "vehicle_count": vehicle_count,
+            "directional_counts_available": False,
+            "recommended_green_seconds": fallback_durations[level],
+            "reason": fallback_reason,
+        }
 
     if client is None:
         return {

@@ -187,22 +187,42 @@
                 </section>
             </div>
 
-            <section class="card admin-panel ai-traffic-panel" id="traffic-insights">
+            <section class="card admin-panel ai-traffic-panel" id="traffic-insights"
+                aria-labelledby="trafficInsightsTitle">
                 <div class="panel-heading">
                     <div>
-                        <h2>AI traffic insights</h2>
-                        <p>Simulation-only recommendation · no live traffic feed</p>
+                        <h2 id="trafficInsightsTitle">AI Traffic Insights</h2>
+                        <p>Rule-based traffic simulation · not live traffic</p>
                     </div>
-                    <span class="simulation-badge"><span aria-hidden="true"></span> DEMO INPUT</span>
+                    <span class="simulation-badge"><span aria-hidden="true"></span> RULE-BASED DEMO · NOT LIVE</span>
                 </div>
-                <p class="traffic-demo-input">Demonstration input: MEDIUM congestion · 6 simulated vehicles. Directional
-                    counts and queue sizes are not available.</p>
-                <p id="trafficInsightStatus" class="ai-assessment-status" role="status">Loading simulation analysis…</p>
+                <dl class="traffic-insight-inputs" aria-label="Traffic simulation inputs">
+                    <div>
+                        <dt>Traffic level</dt>
+                        <dd id="trafficInsightLevel">—</dd>
+                    </div>
+                    <div>
+                        <dt>Displayed vehicle count</dt>
+                        <dd id="trafficInsightVehicleCount">—</dd>
+                    </div>
+                </dl>
+                <p id="trafficInsightStatus" class="ai-assessment-status" role="status">
+                    Loading rule-based simulation…
+                </p>
                 <div class="traffic-insight-result">
-                    <p><strong>Recommendation</strong> <span id="trafficRecommendation">Waiting for analysis</span></p>
-                    <p><strong>Reason</strong> <span id="trafficRecommendationReason">No recommendation received
-                            yet.</span></p>
+                    <p class="traffic-insight-recommendation">
+                        <strong>Recommendation</strong>
+                        <span id="trafficRecommendation">Waiting for simulation</span>
+                    </p>
+                    <p>
+                        <strong>Rule explanation</strong>
+                        <span id="trafficRecommendationReason">No rule-based recommendation received yet.</span>
+                    </p>
                 </div>
+                <p class="traffic-insight-limitation">
+                    Aggregate demo inputs only. Directional counts, queue sizes, and live traffic measurements are not
+                    available; this recommendation does not control a real signal.
+                </p>
                 <a class="text-link" href="../traffic/traffic.html">Review traffic simulation <span
                         aria-hidden="true">→</span></a>
             </section>
@@ -271,7 +291,7 @@
                     real-world traffic measurement; no signal control is connected.
                 </p>
                 <div class="vehicle-detection-actions">
-                    <button class="primary-button" id="startVehicleDetection" type="button">Process recorded
+                    <button class="primary-button" id="startVehicleDetection" type="button" disabled>Process recorded
                         video</button>
                     <button class="refresh-button" id="refreshVehicleDetection" type="button">Refresh status</button>
                     <a class="text-link" id="annotatedVideoLink" href="#" hidden>Open annotated video <span
@@ -441,7 +461,18 @@
             }
 
             if (!response.ok) {
-                throw new Error(`${endpoint} returned HTTP ${response.status}.`);
+                let detail;
+                try {
+                    const errorData = await response.json();
+                    detail = Array.isArray(errorData.detail)
+                        ? errorData.detail.map(function (item) {
+                            return item.msg || String(item);
+                        }).join(", ")
+                        : errorData.detail;
+                } catch {
+                    detail = null;
+                }
+                throw new Error(detail || `${endpoint} returned HTTP ${response.status}.`);
             }
 
             return response.json();
@@ -591,20 +622,30 @@
             const status = document.getElementById("trafficInsightStatus");
             const recommendation = document.getElementById("trafficRecommendation");
             const reason = document.getElementById("trafficRecommendationReason");
+            const level = document.getElementById("trafficInsightLevel");
+            const vehicleCount = document.getElementById("trafficInsightVehicleCount");
 
             try {
-                const result = await fetchJSON("/traffic-analysis?congestion_level=MEDIUM&vehicle_count=6");
-                if (result.ai_status === "invalid_input" || !Number.isInteger(result.recommended_green_seconds)) {
+                const result = await fetchJSON(
+                    "/traffic-analysis?congestion_level=MEDIUM&vehicle_count=6&rule_based=true"
+                );
+                if (result.ai_status !== "rule_based" ||
+                    !Number.isInteger(result.recommended_green_seconds) ||
+                    typeof result.congestion_level !== "string" ||
+                    typeof result.vehicle_count !== "string" ||
+                    typeof result.reason !== "string") {
                     throw new Error(result.reason || "The analysis returned no usable recommendation.");
                 }
-                status.textContent = result.ai_status === "success"
-                    ? "AI-assisted recommendation · review before applying in the simulation."
-                    : "AI unavailable · transparent rule-based simulation fallback.";
-                recommendation.textContent = `${result.recommended_green_seconds}s green phase`;
+                level.textContent = result.congestion_level.toUpperCase();
+                vehicleCount.textContent = result.vehicle_count;
+                status.textContent = "Rule-based simulation result · not live traffic.";
+                recommendation.textContent = `${result.recommended_green_seconds}-second green phase`;
                 reason.textContent = result.reason;
             } catch (error) {
                 console.warn("Traffic insight unavailable:", error);
-                status.textContent = "Simulation analysis unavailable. No timing recommendation is shown.";
+                status.textContent = "Rule-based simulation unavailable. No recommendation is shown.";
+                level.textContent = "Unavailable";
+                vehicleCount.textContent = "Unavailable";
                 recommendation.textContent = "Unavailable";
                 reason.textContent = error.message;
             }
@@ -619,10 +660,18 @@
         const refreshVehicleDetectionButton = document.getElementById("refreshVehicleDetection");
         const annotatedVideoLink = document.getElementById("annotatedVideoLink");
         let vehicleDetectionPoll = null;
-        let lastVehicleDetectionStatus = "idle";
+        let lastVehicleDetectionStatus = "unknown";
+        let vehicleDetectionRequestId = 0;
+        let vehicleDetectionStartPending = false;
+
+        function isVehicleDetectionActive(status) {
+            return status === "queued" || status === "running" || status === "processing";
+        }
 
         function renderVehicleDetection(result) {
-            lastVehicleDetectionStatus = result.status || "idle";
+            const status = result.status || "unknown";
+            const isActive = isVehicleDetectionActive(status);
+            lastVehicleDetectionStatus = status;
             const counts = result.vehicle_counts || {};
             const hasObservedFrames = Number(result.processed_frames) > 0;
             document.getElementById("vehicleCountCar").textContent =
@@ -656,34 +705,37 @@
             vehicleDetectionNote.textContent = result.congestion_basis ||
                 "Congestion uses peak simultaneous detections from the recorded clip only; " +
                 "it is not a verified real-world traffic measurement.";
-            const stateLabel = result.status === "failed" || result.status === "error"
+            const stateLabel = status === "failed" || status === "error"
                 ? "Failed"
-                : result.status === "completed"
+                : status === "completed"
                     ? "Completed"
-                    : result.status === "running"
-                        ? "Processing"
-                        : result.status === "queued"
-                            ? "Queued"
-                            : result.status || "Status unavailable";
+                    : status === "queued"
+                        ? "Queued"
+                        : isActive
+                            ? "Processing"
+                            : status === "idle"
+                                ? "Ready"
+                                : status;
             const failureDetail = result.error_message || result.message;
             vehicleDetectionStatus.textContent =
                 `${result.video_label || "RECORDED VIDEO DEMO — NOT LIVE CCTV"} · ` +
                 `${stateLabel}${stateLabel === "Failed" && failureDetail ? `: ${failureDetail}` :
-                    result.message && result.status !== "completed" ? ` · ${result.message}` : ""}`;
+                    result.message && status !== "completed" && status !== "idle"
+                        ? ` · ${result.message}` : ""}`;
             vehicleDetectionStatus.classList.toggle(
                 "vehicle-detection-error",
-                result.status === "failed" || result.status === "error"
+                status === "failed" || status === "error"
             );
             startVehicleDetectionButton.disabled =
-                result.status === "queued" || result.status === "running";
+                isActive || vehicleDetectionStartPending || status === "unknown";
             startVehicleDetectionButton.textContent =
-                result.status === "queued" || result.status === "running"
+                isActive
                     ? "Processing…"
-                    : result.status === "completed"
+                    : status === "completed"
                         ? "Run demo again"
                         : "Process recorded video";
 
-            if (result.status === "completed" && result.output_video_url) {
+            if (status === "completed" && result.output_video_url) {
                 annotatedVideoLink.href = `${API_URL}${result.output_video_url}`;
                 annotatedVideoLink.hidden = false;
             } else {
@@ -692,48 +744,78 @@
         }
 
         async function loadVehicleDetection() {
+            const requestId = ++vehicleDetectionRequestId;
             refreshVehicleDetectionButton.disabled = true;
+            if (vehicleDetectionPoll) {
+                window.clearTimeout(vehicleDetectionPoll);
+                vehicleDetectionPoll = null;
+            }
             try {
                 const result = await fetchJSON("/vehicle-detection/status");
-                renderVehicleDetection(result);
-                if (vehicleDetectionPoll) {
-                    window.clearTimeout(vehicleDetectionPoll);
-                    vehicleDetectionPoll = null;
+                if (requestId !== vehicleDetectionRequestId) {
+                    return;
                 }
+                renderVehicleDetection(result);
 
-                if (result.status === "queued" || result.status === "running") {
+                if (isVehicleDetectionActive(result.status)) {
                     vehicleDetectionPoll = window.setTimeout(loadVehicleDetection, 2000);
                 } else if (result.status === "completed") {
                     const finalResult = await fetchJSON("/vehicle-detection/results");
-                    renderVehicleDetection(finalResult);
+                    if (requestId === vehicleDetectionRequestId) {
+                        renderVehicleDetection(finalResult);
+                    }
                 }
             } catch (error) {
+                if (requestId !== vehicleDetectionRequestId) {
+                    return;
+                }
                 vehicleDetectionStatus.textContent =
                     `RECORDED VIDEO DEMO — NOT LIVE CCTV · Status unavailable: ${error.message}`;
                 vehicleDetectionStatus.classList.add("vehicle-detection-error");
-                if (lastVehicleDetectionStatus !== "queued" &&
-                    lastVehicleDetectionStatus !== "running") {
-                    startVehicleDetectionButton.disabled = false;
+                if (isVehicleDetectionActive(lastVehicleDetectionStatus)) {
+                    vehicleDetectionPoll = window.setTimeout(loadVehicleDetection, 2000);
                 }
+                startVehicleDetectionButton.disabled =
+                    isVehicleDetectionActive(lastVehicleDetectionStatus) ||
+                    lastVehicleDetectionStatus === "unknown";
             } finally {
-                refreshVehicleDetectionButton.disabled = false;
+                if (requestId === vehicleDetectionRequestId) {
+                    refreshVehicleDetectionButton.disabled = false;
+                }
             }
         }
 
         async function startVehicleDetection() {
+            if (vehicleDetectionStartPending ||
+                isVehicleDetectionActive(lastVehicleDetectionStatus) ||
+                lastVehicleDetectionStatus === "unknown") {
+                return;
+            }
+            vehicleDetectionStartPending = true;
+            const requestId = ++vehicleDetectionRequestId;
             startVehicleDetectionButton.disabled = true;
             vehicleDetectionStatus.classList.remove("vehicle-detection-error");
             vehicleDetectionStatus.textContent =
                 "RECORDED VIDEO DEMO — NOT LIVE CCTV · Requesting background processing…";
             try {
                 const result = await fetchJSON("/vehicle-detection/start", { method: "POST" });
+                if (requestId !== vehicleDetectionRequestId) {
+                    return;
+                }
                 renderVehicleDetection(result);
                 await loadVehicleDetection();
             } catch (error) {
-                vehicleDetectionStatus.textContent =
-                    `RECORDED VIDEO DEMO — NOT LIVE CCTV · Failed: ${error.message}`;
-                vehicleDetectionStatus.classList.add("vehicle-detection-error");
-                startVehicleDetectionButton.disabled = false;
+                if (requestId === vehicleDetectionRequestId) {
+                    vehicleDetectionStatus.textContent =
+                        `RECORDED VIDEO DEMO — NOT LIVE CCTV · Failed to start: ${error.message}`;
+                    vehicleDetectionStatus.classList.add("vehicle-detection-error");
+                    startVehicleDetectionButton.disabled = false;
+                }
+            } finally {
+                vehicleDetectionStartPending = false;
+                startVehicleDetectionButton.disabled =
+                    isVehicleDetectionActive(lastVehicleDetectionStatus) ||
+                    lastVehicleDetectionStatus === "unknown";
             }
         }
 

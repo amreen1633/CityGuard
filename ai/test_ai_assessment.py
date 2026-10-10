@@ -133,6 +133,27 @@ class TrafficRecommendationTests(unittest.TestCase):
         self.assertEqual(result["recommended_green_seconds"], 50)
         self.assertEqual(result["ai_status"], "fallback")
 
+    def test_explicit_rule_based_mode_uses_existing_simulation_rules(self):
+        fake_client = SimpleNamespace(
+            responses=SimpleNamespace(
+                create=lambda **kwargs: self.fail(
+                    "Rule-based simulation must not call the AI client"
+                )
+            )
+        )
+        with patch.object(ai_service, "client", fake_client):
+            result = ai_service.recommend_traffic_signal_timing(
+                "MEDIUM",
+                "6",
+                rule_based=True,
+            )
+
+        self.assertEqual(result["ai_status"], "rule_based")
+        self.assertEqual(result["congestion_level"], "medium")
+        self.assertEqual(result["vehicle_count"], "6")
+        self.assertEqual(result["recommended_green_seconds"], 40)
+        self.assertIn("medium simulation level with 6 displayed vehicles", result["reason"])
+
 
 if __name__ == "__main__":
     unittest.main()
