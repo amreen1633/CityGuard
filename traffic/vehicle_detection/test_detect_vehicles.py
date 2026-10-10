@@ -11,12 +11,14 @@ from traffic.vehicle_detection.detect_vehicles import (
     VideoDetectionJob,
     estimate_congestion,
     get_video_path,
+    _local_model_path,
     process_video,
 )
 
 
 class FakeFrame:
-    shape = (360, 640, 3)
+    def __init__(self, shape=(360, 640, 3)):
+        self.shape = shape
 
     def copy(self):
         return self
@@ -26,6 +28,7 @@ class FakeCapture:
     def __init__(self, frames):
         self.frames = list(frames)
         self.position = 0
+        self.released = False
 
     def isOpened(self):
         return True
@@ -45,12 +48,13 @@ class FakeCapture:
         return True, frame
 
     def release(self):
-        return None
+        self.released = True
 
 
 class FakeWriter:
     def __init__(self):
         self.frames = []
+        self.released = False
 
     def isOpened(self):
         return True
@@ -59,7 +63,7 @@ class FakeWriter:
         self.frames.append(frame)
 
     def release(self):
-        return None
+        self.released = True
 
 
 class FakeBackgroundTasks:
@@ -71,6 +75,23 @@ class FakeBackgroundTasks:
 
 
 class VehicleDetectionTests(unittest.TestCase):
+    def test_existing_local_model_path_is_used(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            project_root = Path(temporary_directory)
+            backend_directory = project_root / "backend"
+            backend_directory.mkdir()
+            model_path = backend_directory / "yolo11n.pt"
+            model_path.touch()
+
+            with patch(
+                "traffic.vehicle_detection.detect_vehicles.PROJECT_ROOT",
+                project_root,
+            ):
+                self.assertEqual(
+                    _local_model_path("yolo11n.pt"),
+                    str(model_path.resolve()),
+                )
+
     def test_video_path_defaults_to_repository_sample(self):
         with patch.dict(os.environ, {"CITYGUARD_VIDEO_PATH": ""}):
             self.assertEqual(
@@ -379,6 +400,59 @@ class VehicleDetectionTests(unittest.TestCase):
         self.assertEqual(len(writer.frames), 3)
         self.assertEqual(len(progress_updates), 3)
         self.assertIn("NOT LIVE CCTV", summary["video_label"])
+        self.assertTrue(capture.released)
+        self.assertTrue(writer.released)
+
+    def test_large_frames_are_resized_for_inference_and_restored_for_output(self):
+        capture = FakeCapture([FakeFrame((1080, 1920, 3))])
+        writer = FakeWriter()
+        resize_calls = []
+        inference_shapes = []
+        fake_cv2 = ModuleType("cv2")
+        fake_cv2.CAP_PROP_FPS = 1
+        fake_cv2.CAP_PROP_FRAME_COUNT = 2
+        fake_cv2.FONT_HERSHEY_SIMPLEX = 0
+        fake_cv2.LINE_AA = 0
+        fake_cv2.INTER_AREA = 1
+        fake_cv2.INTER_LINEAR = 2
+        fake_cv2.VideoCapture = lambda path: capture
+        fake_cv2.VideoWriter_fourcc = lambda *args: 0
+        fake_cv2.VideoWriter = lambda *args: writer
+        fake_cv2.putText = lambda *args: None
+
+        def resize(frame, dimensions, interpolation):
+            resize_calls.append((dimensions, interpolation))
+            return FakeFrame((dimensions[1], dimensions[0], 3))
+
+        fake_cv2.resize = resize
+
+        class FakeYOLO:
+            def __init__(self, model_name):
+                pass
+
+            def track(self, frame, **kwargs):
+                inference_shapes.append(frame.shape)
+                boxes = SimpleNamespace(cls=[], id=[])
+                return [SimpleNamespace(boxes=boxes, plot=frame.copy)]
+
+        fake_ultralytics = ModuleType("ultralytics")
+        fake_ultralytics.YOLO = FakeYOLO
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            video = Path(temporary_directory) / "input.mp4"
+            video.touch()
+            output = Path(temporary_directory) / "annotated.mp4"
+            with patch.dict(
+                sys.modules,
+                {"cv2": fake_cv2, "ultralytics": fake_ultralytics},
+            ):
+                process_video(video, output)
+
+        self.assertEqual(inference_shapes, [(360, 640, 3)])
+        self.assertEqual(resize_calls, [((640, 360), fake_cv2.INTER_AREA),
+                                        ((1920, 1080), fake_cv2.INTER_LINEAR)])
+        self.assertEqual(writer.frames[0].shape, (1080, 1920, 3))
+        self.assertTrue(capture.released)
+        self.assertTrue(writer.released)
 
     def test_model_load_failure_reports_download_troubleshooting(self):
         capture = FakeCapture([FakeFrame()])
@@ -435,6 +509,16 @@ class VehicleDetectionTests(unittest.TestCase):
         self.assertEqual(completed["vehicle_counts"]["car"], 2)
         self.assertEqual(completed["output_video_url"], "/vehicle-detection/video")
         self.assertNotIn("output_file", completed)
+
+    def test_background_job_rejects_duplicate_while_queued(self):
+        job = VideoDetectionJob()
+        background = FakeBackgroundTasks()
+        job.start(background)
+
+        with self.assertRaisesRegex(RuntimeError, "already running"):
+            job.start(background)
+
+        self.assertEqual(len(background.tasks), 1)
 
     def test_background_job_exposes_processing_exception_as_failed(self):
         job = VideoDetectionJob()

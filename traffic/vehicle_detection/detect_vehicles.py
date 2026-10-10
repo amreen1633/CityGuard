@@ -20,6 +20,7 @@ VIDEO_CACHE_PATH = Path(tempfile.gettempdir()) / "cityguard" / "video3.mp4"
 DEFAULT_OUTPUT_PATH = Path(__file__).resolve(
 ).parent / "outputs" / "video3_annotated.mp4"
 DEFAULT_MODEL = os.environ.get("CITYGUARD_YOLO_MODEL", "yolo11n.pt")
+MAX_INFERENCE_DIMENSION = 640
 VEHICLE_CLASSES = {2: "car", 3: "motorcycle", 5: "bus", 7: "truck"}
 CONGESTION_BASIS = (
     "Demo estimate from peak simultaneously detected vehicles in this recorded clip "
@@ -178,6 +179,21 @@ def _empty_summary() -> dict[str, object]:
     }
 
 
+def _local_model_path(model_name: str) -> str:
+    """Use an existing local weights file before letting Ultralytics fetch it."""
+    model_path = Path(model_name).expanduser()
+    candidates = [model_path]
+    if not model_path.is_absolute():
+        candidates.extend(
+            directory / model_path
+            for directory in (PROJECT_ROOT / "backend", PROJECT_ROOT)
+        )
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate.resolve())
+    return model_name
+
+
 def process_video(
     video_path: Path | str | None = None,
     output_path: Path | str = DEFAULT_OUTPUT_PATH,
@@ -217,6 +233,13 @@ def process_video(
         )
 
     writer = None
+    model = None
+    frame = None
+    inference_frame = None
+    results = None
+    result = None
+    boxes = None
+    annotated = None
     try:
         fps = float(capture.get(cv2.CAP_PROP_FPS))
         if fps <= 0:
@@ -241,7 +264,7 @@ def process_video(
             )
 
         try:
-            model = YOLO(model_name)
+            model = YOLO(_local_model_path(model_name))
         except Exception as error:
             raise RuntimeError(
                 f"Could not load YOLO model '{model_name}'. Check the model name, "
@@ -257,9 +280,21 @@ def process_video(
         peak_simultaneous_vehicles = 0
 
         while ok and frame is not None:
+            height, width = frame.shape[:2]
+            inference_frame = frame
+            if max(height, width) > MAX_INFERENCE_DIMENSION:
+                scale = MAX_INFERENCE_DIMENSION / max(height, width)
+                inference_width = max(1, round(width * scale))
+                inference_height = max(1, round(height * scale))
+                inference_frame = cv2.resize(
+                    frame,
+                    (inference_width, inference_height),
+                    interpolation=cv2.INTER_AREA,
+                )
+                frame = None
             try:
                 results = model.track(
-                    frame,
+                    inference_frame,
                     persist=True,
                     tracker="bytetrack.yaml",
                     classes=list(VEHICLE_CLASSES),
@@ -299,7 +334,15 @@ def process_video(
             peak_simultaneous_vehicles = max(
                 peak_simultaneous_vehicles, observed_this_frame
             )
-            annotated = result.plot() if result is not None else frame.copy()
+            annotated = (
+                result.plot() if result is not None else inference_frame.copy()
+            )
+            if annotated.shape[:2] != (height, width):
+                annotated = cv2.resize(
+                    annotated,
+                    (width, height),
+                    interpolation=cv2.INTER_LINEAR,
+                )
             counts = {
                 name: len(ids) for name, ids in tracked_ids.items()
             }
@@ -343,6 +386,12 @@ def process_video(
             if progress_callback is not None:
                 progress_callback(current_summary)
 
+            frame = None
+            inference_frame = None
+            results = None
+            result = None
+            boxes = None
+            annotated = None
             ok, frame = capture.read()
 
         if processed_frames == 0:
@@ -366,6 +415,13 @@ def process_video(
         capture.release()
         if writer is not None:
             writer.release()
+        model = None
+        frame = None
+        inference_frame = None
+        results = None
+        result = None
+        boxes = None
+        annotated = None
 
 
 class VideoDetectionJob:

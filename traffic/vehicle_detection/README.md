@@ -13,10 +13,11 @@ the project's existing backend virtual environment:
 .\backend\venv\Scripts\python.exe -m pip install -r .\traffic\vehicle_detection\requirements.txt
 ```
 
-The first run downloads the default `yolo11n.pt` model from Ultralytics. Ensure
-network access and enough disk space. Set `CITYGUARD_YOLO_MODEL` only if you
-want the API job to use another locally available or supported model name; no
-camera credentials or API keys are needed.
+If `yolo11n.pt` (or the model selected by `CITYGUARD_YOLO_MODEL`) is already
+available in the working directory, backend directory, or project root, the
+processor reuses that local file. Otherwise, Ultralytics downloads the model on
+first use, so ensure network access and enough disk space. No camera
+credentials or API keys are needed.
 
 ## Render video file
 
@@ -82,6 +83,9 @@ The optional API routes are:
 Counts by vehicle class are unique ByteTrack IDs observed across the clip.
 `total_detections` counts frame-level detections (so the same vehicle may
 contribute more than once); untracked detections are reported separately.
+Frames are processed one at a time. Frames larger than 640 pixels on their
+longest side are resized for inference, while the annotated output retains the
+source video dimensions.
 Congestion is only a demo estimate based on the peak number detected in one
 frame: low (0-3), medium (4-8), or high (9+). It is not a calibrated or
 verified real-world traffic measurement. The single-process in-memory job
